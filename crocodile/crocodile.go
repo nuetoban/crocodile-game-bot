@@ -19,7 +19,7 @@ type WordsProvider interface {
 
 // Storage aims to save FSM state somewhere (e.g. in Redis)
 type Storage interface {
-	Save(CrocodileGame) error
+	Save(Game) error
 }
 
 // Machine stores state of game in one chat
