@@ -16,42 +16,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package utils
+package model
 
-import (
-	"math"
-	"time"
-)
+type UserInChat struct {
+	ID     int
+	ChatID int64
 
-func CalculateTimeDiff(t1, t2 time.Time) (h, m, s int) {
-	hs := t1.Sub(t2).Hours()
-	hs, mf := math.Modf(hs)
-	ms := mf * 60
+	Name string
 
-	ms, sf := math.Modf(ms)
-	ss := sf * 60
+	// When user was a Host
+	WasHost int
+	Success int
 
-	h = int(hs)
-	m = int(ms)
-	s = int(ss)
-
-	return
-}
-
-func DetectCaseAnswers(i int) string {
-	i %= 100
-	if 11 <= i && i <= 19 {
-		return "ответов"
-	}
-
-	i %= 10
-	switch i {
-	case 0, 5, 6, 7, 8, 9:
-		return "ответов"
-	case 1:
-		return "ответ"
-	case 2, 3, 4:
-		return "ответа"
-	}
-	return "ответов"
+	// When user was a guesser
+	Guessed int
 }
