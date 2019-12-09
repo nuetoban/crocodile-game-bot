@@ -20,6 +20,7 @@ package crocodile
 
 import (
 	"errors"
+	"strings"
 	"sync"
 	"time"
 
@@ -198,7 +199,9 @@ func (m *Machine) GetGuessedTime() time.Time { return m.GuessedTime }
 func (m *Machine) GetWinner() int { return m.Winner }
 
 // CheckWord checks if m.Word == provided word
-func (m *Machine) CheckWord(word string) bool { return word == m.Word }
+func (m *Machine) CheckWord(word string) bool {
+	return strings.ReplaceAll(word, "ё", "е") == m.Word
+}
 
 // CheckWordAndSetWinner sets m.Winner and returns true if m.CheckWord() returns true, otherwise ret. false
 func (m *Machine) CheckWordAndSetWinner(word string, potentialWinner int, winnerName string) bool {

@@ -39,6 +39,7 @@ func NewWordsProviderReader(r io.Reader) (*WordsProviderReader, error) {
 	}
 
 	contentString := strings.TrimSpace(string(content))
+	contentString = strings.ReplaceAll(contentString, "ё", "е")
 
 	return &WordsProviderReader{
 		wordsList: strings.Split(contentString, "\n"),
