@@ -92,6 +92,24 @@ func (p *Postgres) GetRating(chatID int64) ([]model.UserInChat, error) {
 
 func (p *Postgres) GetGlobalRating() ([]model.UserInChat, error) {
 	var users []model.UserInChat
-	p.db.Where("guessed > 0").Limit(25).Order("guessed desc").Find(&users)
+
+	rows, err := p.db.Table("user_in_chats").
+		Select("sum(\"guessed\") as guessed, (array_agg(\"name\"))[1] as name, \"id\"").
+		Group("id").
+		Limit(25).
+		Order("guessed desc").
+		Having("sum(\"guessed\") > ?", 0).
+		Rows()
+	if err != nil {
+		return users, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var user model.UserInChat
+		p.db.ScanRows(rows, &user)
+		users = append(users, user)
+	}
+
 	return users, nil
 }
