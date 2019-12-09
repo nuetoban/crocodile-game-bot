@@ -194,9 +194,10 @@ func ratingHandler(m *tb.Message) {
 }
 
 func startNewGameHandler(m *tb.Message) {
-	// if m.Private() {
-	// 	bot.Send(m.Sender, "Начать игру можно только в общем чате.")
-	// }
+	if m.Private() {
+		bot.Send(m.Sender, "Добавить бота в чат: https://t.me/Crocodile_Game_Bot?startgroup=a ")
+		return
+	}
 
 	// If machine for this chat has been created already
 	if _, ok := machines[m.Chat.ID]; !ok {
