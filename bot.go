@@ -46,6 +46,7 @@ var DEBUG = false
 
 type RatingGetter interface {
 	GetRating(chatID int64) ([]model.UserInChat, error)
+	GetGlobalRating() ([]model.UserInChat, error)
 }
 
 type dbCredentials struct {
@@ -159,6 +160,7 @@ func main() {
 	bot.Handle(tb.OnText, textHandler)
 	bot.Handle("/start", startNewGameHandler)
 	bot.Handle("/rating", ratingHandler)
+	bot.Handle("/globalrating", globalRatingHandler)
 	bot.Handle("/cancel", func(m *tb.Message) {})
 	bindButtonsHandlers(bot)
 
@@ -166,19 +168,29 @@ func main() {
 	bot.Start()
 }
 
-func ratingHandler(m *tb.Message) {
-	rating, err := ratingGetter.GetRating(m.Chat.ID)
+func globalRatingHandler(m *tb.Message) {
+	rating, err := ratingGetter.GetGlobalRating()
 	if err != nil {
-		log.Errorf("ratingHandler: cannot get rating %v:", err)
-	}
-	if len(rating) < 1 {
-		bot.Send(m.Chat, "Данных пока недостаточно!")
+		log.Errorf("globalRatingHandler: cannot get rating %v:", err)
 		return
 	}
 
-	outString := "Топ-25 <b>игроков в крокодила</b> 🐊\n\n"
-	for k, v := range rating {
-		outString += fmt.Sprintf(
+	ratingString := buildRating("Топ-25 <b>игроков в крокодила</b> во всех чатах 🐊", rating)
+
+	_, err = bot.Send(m.Chat, ratingString, tb.ModeHTML)
+	if err != nil {
+		log.Errorf("globalRatingHandler: cannot send rating: %v", err)
+	}
+}
+
+func buildRating(header string, data []model.UserInChat) string {
+	if len(data) < 1 {
+		return "Данных пока недостаточно!"
+	}
+
+	out := header + "\n\n"
+	for k, v := range data {
+		out += fmt.Sprintf(
 			"<b>%d</b>. %s — %d %s.\n",
 			k+1,
 			html.EscapeString(v.Name),
@@ -187,7 +199,19 @@ func ratingHandler(m *tb.Message) {
 		)
 	}
 
-	_, err = bot.Send(m.Chat, outString, tb.ModeHTML)
+	return out
+}
+
+func ratingHandler(m *tb.Message) {
+	rating, err := ratingGetter.GetRating(m.Chat.ID)
+	if err != nil {
+		log.Errorf("ratingHandler: cannot get rating %v:", err)
+		return
+	}
+
+	ratingString := buildRating("Топ-25 <b>игроков в крокодила</b> 🐊", rating)
+
+	_, err = bot.Send(m.Chat, ratingString, tb.ModeHTML)
 	if err != nil {
 		log.Errorf("ratingHandler: cannot send rating: %v", err)
 	}

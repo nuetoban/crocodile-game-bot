@@ -89,3 +89,9 @@ func (p *Postgres) GetRating(chatID int64) ([]model.UserInChat, error) {
 	p.db.Where("guessed > 0 AND chat_id = ?", chatID).Limit(25).Order("guessed desc").Find(&users)
 	return users, nil
 }
+
+func (p *Postgres) GetGlobalRating() ([]model.UserInChat, error) {
+	var users []model.UserInChat
+	p.db.Where("guessed > 0").Limit(25).Order("guessed desc").Find(&users)
+	return users, nil
+}
