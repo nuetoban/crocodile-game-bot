@@ -339,7 +339,7 @@ func seeWordCallbackHandler(c *tb.Callback) {
 			message = m.GetWord()
 		}
 
-		bot.Respond(c, &tb.CallbackResponse{Text: message})
+		bot.Respond(c, &tb.CallbackResponse{Text: message, ShowAlert: true})
 	}
 }
 
@@ -353,7 +353,7 @@ func nextWordCallbackHandler(c *tb.Callback) {
 			message, _ = m.SetNewRandomWord()
 		}
 
-		bot.Respond(c, &tb.CallbackResponse{Text: message})
+		bot.Respond(c, &tb.CallbackResponse{Text: message, ShowAlert: true})
 	}
 }
 
