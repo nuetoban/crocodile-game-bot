@@ -41,12 +41,17 @@ var bot *tb.Bot
 var wordsInlineKeys [][]tb.InlineButton
 var newGameInlineKeys [][]tb.InlineButton
 var ratingGetter RatingGetter
+var statisticsGetter StatisticsGetter
 
 var DEBUG = false
 
 type RatingGetter interface {
 	GetRating(chatID int64) ([]model.UserInChat, error)
 	GetGlobalRating() ([]model.UserInChat, error)
+}
+
+type StatisticsGetter interface {
+	GetStatistics() (int64, int64, error)
 }
 
 type dbCredentials struct {
@@ -138,6 +143,7 @@ func main() {
 	}
 
 	ratingGetter = pg
+	statisticsGetter = pg
 
 	log.Info("Creating games fabric")
 	fabric = crocodile.NewMachineFabric(pg, wordsProvider, log)
@@ -162,6 +168,7 @@ func main() {
 	bot.Handle("/rating", ratingHandler)
 	bot.Handle("/globalrating", globalRatingHandler)
 	bot.Handle("/cancel", func(m *tb.Message) {})
+	bot.Handle("/cstat", statsHandler)
 	bindButtonsHandlers(bot)
 
 	log.Info("Starting the bot")
@@ -214,6 +221,23 @@ func ratingHandler(m *tb.Message) {
 	_, err = bot.Send(m.Chat, ratingString, tb.ModeHTML)
 	if err != nil {
 		log.Errorf("ratingHandler: cannot send rating: %v", err)
+	}
+}
+
+func statsHandler(m *tb.Message) {
+	chats, users, err := statisticsGetter.GetStatistics()
+	if err != nil {
+		log.Errorf("statsHandler: cannot get stats %v:", err)
+		return
+	}
+
+	outString := "<b>Статистика крокодила</b> 🐊\n\n"
+	outString += fmt.Sprintf("Количество чатов: %d\n", chats)
+	outString += fmt.Sprintf("Количество игроков: %d\n", users)
+
+	_, err = bot.Send(m.Chat, outString, tb.ModeHTML)
+	if err != nil {
+		log.Errorf("statsHandler: cannot send stats: %v", err)
 	}
 }
 
