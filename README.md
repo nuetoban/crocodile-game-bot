@@ -16,6 +16,27 @@ Execute this command:
 make test
 ```
 
+## Database Migrations
+We use https://github.com/golang-migrate/migrate to perform migrations.
+Them are stored in ./migrations/ folder.
+
+To apply migrations to your database do the following:
+
+1. Install `migrate` tool
+```
+go get -u https://github.com/golang-migrate/migrate
+```
+2. Apply migrations
+```
+migrate -source file://migrations -database 'postgres://user:pass@localhost:5432/postgres?sslmode=disable' up
+```
+
+If you need to downgrade the database schema, run this command
+```
+migrate -source file://migrations -database 'postgres://user:pass@localhost:5432/postgres?sslmode=disable' down
+```
+Just `down` instead of `up` in the end of the command.
+
 ## Contributing
 
 1. Fork it (<https://github.com/nuetoban/crocodile-game-bot>)
