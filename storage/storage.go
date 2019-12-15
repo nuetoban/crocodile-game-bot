@@ -114,16 +114,14 @@ func (p *Postgres) GetGlobalRating() ([]model.UserInChat, error) {
 	return users, nil
 }
 
-func (p *Postgres) GetStatistics() (int64, int64, error) {
-	result := struct {
-		Chats int64
-		Users int64
-	}{}
+func (p *Postgres) GetStatistics() (model.Statistics, error) {
+	result := model.Statistics{}
 
 	p.db.Raw(`SELECT
                  (SELECT COUNT(DISTINCT("chat_id")) FROM user_in_chats WHERE "id" != "chat_id") AS chats,
-                 (SELECT COUNT(DISTINCT("id")) FROM user_in_chats) AS USERS ;`).
+                 (SELECT COUNT(DISTINCT("id")) FROM user_in_chats) AS users,
+                 (SELECT SUM("was_host") FROM user_in_chats) AS games_played;`).
 		Scan(&result)
 
-	return result.Chats, result.Users, nil
+	return result, nil
 }

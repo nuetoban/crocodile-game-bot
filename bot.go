@@ -51,7 +51,7 @@ type RatingGetter interface {
 }
 
 type StatisticsGetter interface {
-	GetStatistics() (int64, int64, error)
+	GetStatistics() (model.Statistics, error)
 }
 
 type dbCredentials struct {
@@ -225,15 +225,16 @@ func ratingHandler(m *tb.Message) {
 }
 
 func statsHandler(m *tb.Message) {
-	chats, users, err := statisticsGetter.GetStatistics()
+	stats, err := statisticsGetter.GetStatistics()
 	if err != nil {
 		log.Errorf("statsHandler: cannot get stats %v:", err)
 		return
 	}
 
 	outString := "<b>Статистика крокодила</b> 🐊\n\n"
-	outString += fmt.Sprintf("Количество чатов: %d\n", chats)
-	outString += fmt.Sprintf("Количество игроков: %d\n", users)
+	outString += fmt.Sprintf("Количество чатов: %d\n", stats.Chats)
+	outString += fmt.Sprintf("Количество игроков: %d\n", stats.Users)
+	outString += fmt.Sprintf("Всего игр: %d\n", stats.GamesPlayed)
 
 	_, err = bot.Send(m.Chat, outString, tb.ModeHTML)
 	if err != nil {

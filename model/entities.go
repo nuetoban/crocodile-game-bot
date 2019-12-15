@@ -31,3 +31,9 @@ type UserInChat struct {
 	// When user was a guesser
 	Guessed int
 }
+
+type Statistics struct {
+	Chats       int64
+	Users       int64
+	GamesPlayed int64
+}
