@@ -25,7 +25,7 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 
 	"fmt"
-	"gitlab.com/pviktor/crocodile-game-bot/model"
+	"github.com/nuetoban/crocodile-game-bot/model"
 )
 
 type Postgres struct {

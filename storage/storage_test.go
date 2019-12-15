@@ -25,7 +25,7 @@ import (
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 
-	"gitlab.com/pviktor/crocodile-game-bot/model"
+	"github.com/nuetoban/crocodile-game-bot/model"
 )
 
 var p *Postgres

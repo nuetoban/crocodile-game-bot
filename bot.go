@@ -28,10 +28,10 @@ import (
 
 	tb "gopkg.in/tucnak/telebot.v2"
 
-	"gitlab.com/pviktor/crocodile-game-bot/crocodile"
-	"gitlab.com/pviktor/crocodile-game-bot/model"
-	"gitlab.com/pviktor/crocodile-game-bot/storage"
-	"gitlab.com/pviktor/crocodile-game-bot/utils"
+	"github.com/nuetoban/crocodile-game-bot/crocodile"
+	"github.com/nuetoban/crocodile-game-bot/model"
+	"github.com/nuetoban/crocodile-game-bot/storage"
+	"github.com/nuetoban/crocodile-game-bot/utils"
 )
 
 var machines map[int64]*crocodile.Machine
