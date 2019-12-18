@@ -45,8 +45,7 @@ Just `down` instead of `up` in the end of the command.
 4. Push to the branch (`git push origin feature/fooBar`)
 5. Create a new Pull Request
 
-Check out our Trello board if you have no idea what to do 😊
-https://trello.com/b/LULMVlF1/%D0%BA%D1%80%D0%BE%D0%BA%D0%BE%D0%B4%D0%B8%D0%BB-%D0%B1%D0%BE%D1%82
+Check out our [Trello board](https://trello.com/b/LULMVlF1/%D0%BA%D1%80%D0%BE%D0%BA%D0%BE%D0%B4%D0%B8%D0%BB-%D0%B1%D0%BE%D1%82) if you have no idea what to do 😊
 
 ## Contact
 - Telegram: https://t.me/blackstalin
