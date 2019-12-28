@@ -21,11 +21,14 @@ package main
 import (
 	"fmt"
 	"html"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	tb "gopkg.in/tucnak/telebot.v2"
 
 	"github.com/nuetoban/crocodile-game-bot/crocodile"
@@ -37,6 +40,7 @@ import (
 var machines map[int64]*crocodile.Machine
 var fabric *crocodile.MachineFabric
 var bot *tb.Bot
+var textUpdatesRecieved float64
 
 var wordsInlineKeys [][]tb.InlineButton
 var newGameInlineKeys [][]tb.InlineButton
@@ -170,6 +174,14 @@ func main() {
 	bot.Handle("/cancel", func(m *tb.Message) {})
 	bot.Handle("/cstat", statsHandler)
 	bindButtonsHandlers(bot)
+
+	collector := newMetricsCollector(pg)
+	prometheus.MustRegister(collector)
+
+	http.Handle("/metrics", promhttp.Handler())
+
+	log.Info("Starting metrics exporter server")
+	go http.ListenAndServe(":8080", nil)
 
 	log.Info("Starting the bot")
 	bot.Start()
@@ -337,6 +349,8 @@ func startNewGameHandlerCallback(c *tb.Callback) {
 }
 
 func textHandler(m *tb.Message) {
+	textUpdatesRecieved++
+
 	if ma, ok := machines[m.Chat.ID]; ok {
 		if ma.GetHost() != m.Sender.ID || DEBUG {
 			word := strings.TrimSpace(strings.ToLower(m.Text))
