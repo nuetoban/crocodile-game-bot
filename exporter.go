@@ -11,7 +11,7 @@ type metricsCollector struct {
 	chatsTotal          *prometheus.Desc
 	usersTotal          *prometheus.Desc
 	gamesTotal          *prometheus.Desc
-	startsTotal			*prometheus.Desc
+	startsTotal         *prometheus.Desc
 }
 
 func newMetricsCollector(sg StatisticsGetter) *metricsCollector {
