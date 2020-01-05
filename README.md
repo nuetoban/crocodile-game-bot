@@ -22,10 +22,7 @@ Them are stored in ./migrations/ folder.
 
 To apply migrations to your database do the following:
 
-1. Install `migrate` tool
-```
-go get -u https://github.com/golang-migrate/migrate
-```
+1. Install `migrate` tool: https://github.com/golang-migrate/migrate/tree/master/cmd/migrate
 2. Apply migrations
 ```
 migrate -source file://migrations -database 'postgres://user:pass@localhost:5432/postgres?sslmode=disable' up
