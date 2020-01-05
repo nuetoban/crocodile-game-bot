@@ -346,6 +346,7 @@ func startNewGameHandlerCallback(c *tb.Callback) {
 		fmt.Sprintf(
 			`<a href="tg://user?id=%d">%s</a> должен объяснить слово за 2 минуты`,
 			c.Sender.ID, html.EscapeString(c.Sender.FirstName)),
+		tb.ModeHTML,
 		&tb.ReplyMarkup{InlineKeyboard: wordsInlineKeys},
 	)
 }
