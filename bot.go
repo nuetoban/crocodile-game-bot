@@ -161,9 +161,7 @@ func main() {
 	}
 	bot, err = tb.NewBot(settings)
 	if err != nil {
-		if err != nil {
-			log.Fatalf("Cannot connect to Telegram API: %v", err)
-		}
+		log.Fatalf("Cannot connect to Telegram API: %v", err)
 	}
 
 	log.Info("Binding handlers")
