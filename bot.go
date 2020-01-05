@@ -37,17 +37,20 @@ import (
 	"github.com/nuetoban/crocodile-game-bot/utils"
 )
 
-var machines map[int64]*crocodile.Machine
-var fabric *crocodile.MachineFabric
-var bot *tb.Bot
-var textUpdatesRecieved float64
+var (
+	machines map[int64]*crocodile.Machine
+	fabric *crocodile.MachineFabric
+	bot *tb.Bot
+	textUpdatesRecieved float64
+	startsTotal float64
 
-var wordsInlineKeys [][]tb.InlineButton
-var newGameInlineKeys [][]tb.InlineButton
-var ratingGetter RatingGetter
-var statisticsGetter StatisticsGetter
+	wordsInlineKeys [][]tb.InlineButton
+	newGameInlineKeys [][]tb.InlineButton
+	ratingGetter RatingGetter
+	statisticsGetter StatisticsGetter
 
-var DEBUG = false
+	DEBUG = false
+)
 
 type RatingGetter interface {
 	GetRating(chatID int64) ([]model.UserInChat, error)
@@ -257,6 +260,8 @@ func startNewGameHandler(m *tb.Message) {
 		bot.Send(m.Sender, "Добавить бота в чат: https://t.me/Crocodile_Game_Bot?startgroup=a ")
 		return
 	}
+
+	startsTotal++
 
 	// If machine for this chat has been created already
 	if _, ok := machines[m.Chat.ID]; !ok {

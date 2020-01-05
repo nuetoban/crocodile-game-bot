@@ -11,6 +11,7 @@ type metricsCollector struct {
 	chatsTotal          *prometheus.Desc
 	usersTotal          *prometheus.Desc
 	gamesTotal          *prometheus.Desc
+	startsTotal			*prometheus.Desc
 }
 
 func newMetricsCollector(sg StatisticsGetter) *metricsCollector {
@@ -32,6 +33,10 @@ func newMetricsCollector(sg StatisticsGetter) *metricsCollector {
 			"Shows how many games has been played",
 			nil, nil,
 		),
+		startsTotal: prometheus.NewDesc("starts_total",
+			"Shows how many times start command has been called",
+			nil, nil,
+		),
 	}
 }
 
@@ -41,6 +46,7 @@ func (c *metricsCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.chatsTotal
 	ch <- c.usersTotal
 	ch <- c.gamesTotal
+	ch <- c.startsTotal
 }
 
 // Collect implements required collect function for all promehteus collectors
@@ -52,4 +58,5 @@ func (c *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(c.chatsTotal, prometheus.CounterValue, float64(stats.Chats))
 	ch <- prometheus.MustNewConstMetric(c.usersTotal, prometheus.CounterValue, float64(stats.Users))
 	ch <- prometheus.MustNewConstMetric(c.gamesTotal, prometheus.CounterValue, float64(stats.GamesPlayed))
+	ch <- prometheus.MustNewConstMetric(c.startsTotal, prometheus.CounterValue, startsTotal)
 }
