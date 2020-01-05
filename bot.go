@@ -38,16 +38,16 @@ import (
 )
 
 var (
-	machines map[int64]*crocodile.Machine
-	fabric *crocodile.MachineFabric
-	bot *tb.Bot
+	machines            map[int64]*crocodile.Machine
+	fabric              *crocodile.MachineFabric
+	bot                 *tb.Bot
 	textUpdatesRecieved float64
-	startsTotal float64
+	startsTotal         float64
 
-	wordsInlineKeys [][]tb.InlineButton
+	wordsInlineKeys   [][]tb.InlineButton
 	newGameInlineKeys [][]tb.InlineButton
-	ratingGetter RatingGetter
-	statisticsGetter StatisticsGetter
+	ratingGetter      RatingGetter
+	statisticsGetter  StatisticsGetter
 
 	DEBUG = false
 )
