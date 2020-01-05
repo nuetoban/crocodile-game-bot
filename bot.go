@@ -343,7 +343,9 @@ func startNewGameHandlerCallback(c *tb.Callback) {
 
 	bot.Send(
 		m.Chat,
-		c.Sender.FirstName+" должен объяснить слово за 2 минуты",
+		fmt.Sprintf(
+			`<a href="tg://user?id=%d">%s</a> должен объяснить слово за 2 минуты`,
+			c.Sender.ID, html.EscapeString(c.Sender.FirstName)),
 		&tb.ReplyMarkup{InlineKeyboard: wordsInlineKeys},
 	)
 }
