@@ -306,9 +306,6 @@ func startNewGameHandler(m *tb.Message) {
 func startNewGameHandlerCallback(c *tb.Callback) {
 	m := c.Message
 	var ma *crocodile.Machine
-	// if m.Private() {
-	// 	bot.Send(m.Sender, "Начать игру можно только в общем чате.")
-	// }
 
 	// If machine for this chat has been created already
 	if _, ok := machines[m.Chat.ID]; !ok {
