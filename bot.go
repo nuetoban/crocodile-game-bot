@@ -42,7 +42,10 @@ var (
 	fabric              *crocodile.MachineFabric
 	bot                 *tb.Bot
 	textUpdatesRecieved float64
-	startsTotal         float64
+	startTotal          float64
+	ratingTotal         float64
+	globalRatingTotal   float64
+	cstatTotal          float64
 
 	wordsInlineKeys   [][]tb.InlineButton
 	newGameInlineKeys [][]tb.InlineButton
@@ -189,6 +192,7 @@ func main() {
 }
 
 func globalRatingHandler(m *tb.Message) {
+	globalRatingTotal++
 	rating, err := ratingGetter.GetGlobalRating()
 	if err != nil {
 		log.Errorf("globalRatingHandler: cannot get rating %v:", err)
@@ -223,6 +227,7 @@ func buildRating(header string, data []model.UserInChat) string {
 }
 
 func ratingHandler(m *tb.Message) {
+	ratingTotal++
 	rating, err := ratingGetter.GetRating(m.Chat.ID)
 	if err != nil {
 		log.Errorf("ratingHandler: cannot get rating %v:", err)
@@ -238,6 +243,7 @@ func ratingHandler(m *tb.Message) {
 }
 
 func statsHandler(m *tb.Message) {
+	cstatTotal++
 	stats, err := statisticsGetter.GetStatistics()
 	if err != nil {
 		log.Errorf("statsHandler: cannot get stats %v:", err)
@@ -261,7 +267,7 @@ func startNewGameHandler(m *tb.Message) {
 		return
 	}
 
-	startsTotal++
+	startTotal++
 
 	// If machine for this chat has been created already
 	if _, ok := machines[m.Chat.ID]; !ok {
