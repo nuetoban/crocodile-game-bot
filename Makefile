@@ -1,4 +1,4 @@
-.PHONY: run docker get test graph
+.PHONY: run docker get test graph wc
 
 default: run
 
@@ -19,3 +19,6 @@ graph:
 	go-callvis -focus github.com/nuetoban/crocodile-game-bot/crocodile \
 		-group pkg,type -nostd -format=png \
 		-ignore github.com/sirupsen/logrus . | dot -Tpng -o crocodile.png
+
+wc:
+	find . -name '*.go' | xargs cat | wc -l

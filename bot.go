@@ -312,9 +312,6 @@ func startNewGameHandler(m *tb.Message) {
 func startNewGameHandlerCallback(c *tb.Callback) {
 	m := c.Message
 	var ma *crocodile.Machine
-	// if m.Private() {
-	// 	bot.Send(m.Sender, "Начать игру можно только в общем чате.")
-	// }
 
 	// If machine for this chat has been created already
 	if _, ok := machines[m.Chat.ID]; !ok {
@@ -352,7 +349,10 @@ func startNewGameHandlerCallback(c *tb.Callback) {
 
 	bot.Send(
 		m.Chat,
-		c.Sender.FirstName+" должен объяснить слово за 2 минуты",
+		fmt.Sprintf(
+			`<a href="tg://user?id=%d">%s</a> должен объяснить слово за 2 минуты`,
+			c.Sender.ID, html.EscapeString(c.Sender.FirstName)),
+		tb.ModeHTML,
 		&tb.ReplyMarkup{InlineKeyboard: wordsInlineKeys},
 	)
 }
