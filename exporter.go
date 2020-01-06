@@ -32,7 +32,7 @@ func newMetricsCollector(sg StatisticsGetter) *metricsCollector {
 			"Shows how many users are in the bot",
 			nil, nil,
 		),
-		gamesTotal: prometheus.NewDesc("game_total",
+		gamesTotal: prometheus.NewDesc("games_total",
 			"Shows how many games has been played",
 			nil, nil,
 		),
