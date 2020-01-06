@@ -17,4 +17,4 @@ docker exec -e \
 set +x
 curl -F "chat_id=-371498376" \
     -F document=@"$DBDUMPFILE" \
-    "https://api.telegram.org/bot$CROCODILE_GAME_BOT_TOKEN/sendMessage/sendDocument"
+    "https://api.telegram.org/bot$CROCODILE_GAME_BOT_TOKEN/sendDocument"
