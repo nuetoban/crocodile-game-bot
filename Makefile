@@ -1,12 +1,26 @@
-.PHONY: run docker get test graph wc
+.PHONY: build run docker-build docker-tag docker-push get test graph wc
 
-default: run
+default: build
 
-docker:
-	docker build --rm -t github.com/nuetoban/crocodile-game-bot .
+docker-build:
+	docker build -t crocodile .
+
+docker-tag:
+	docker tag crocodile docker.pkg.github.com/nuetoban/crocodile-game-bot/crocodile:latest
+
+docker-push:
+	docker push docker.pkg.github.com/nuetoban/crocodile-game-bot/crocodile:latest
+
+docker-full: docker-build docker-tag docker-push
 
 run:
 	go run bot.go log.go exporter.go
+
+build:
+	go build -a \
+		-ldflags '-linkmode external -extldflags "-static"' \
+		-o crocodile-server \
+		bot.go log.go exporter.go
 
 get:
 	go get -v ./...
