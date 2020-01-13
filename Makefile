@@ -1,4 +1,4 @@
-.PHONY: build run docker-build docker-tag docker-push get test graph wc
+.PHONY: build run docker-build docker-tag docker-push migrate-up migrate-down get test graph wc
 
 default: build
 
@@ -12,6 +12,14 @@ docker-push:
 	docker push docker.pkg.github.com/nuetoban/crocodile-game-bot/crocodile:latest
 
 docker-full: docker-build docker-tag docker-push
+
+migrate-up:
+	migrate -source file://migrations \
+		-database 'postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable' up
+
+migrate-down:
+	migrate -source file://migrations -database \
+		'postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable' down 1
 
 run:
 	go run bot.go log.go exporter.go
