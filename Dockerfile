@@ -7,8 +7,9 @@ RUN apk add --update make gcc libc-dev
 RUN make
 
 
-FROM scratch AS final
+FROM alpine:3.11
 
+RUN apk add --no-cache ca-certificates
 COPY --from=build /build/crocodile-server /crocodile-server
 COPY dictionaries /dictionaries/
 
