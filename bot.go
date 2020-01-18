@@ -233,6 +233,7 @@ func main() {
 	bot.Handle("/globalrating", globalRatingHandler)
 	bot.Handle("/cancel", func(m *tb.Message) {})
 	bot.Handle("/cstat", statsHandler)
+	bot.Handle("/rules", rulesHandler)
 	bindButtonsHandlers(bot)
 
 	collector := newMetricsCollector(pg)
@@ -499,4 +500,16 @@ func bindButtonsHandlers(bot *tb.Bot) {
 	bot.Handle(&newGame, mustLockCallback(startNewGameHandlerCallback))
 	bot.Handle(&seeWord, mustLockCallback(seeWordCallbackHandler))
 	bot.Handle(&nextWord, mustLockCallback(nextWordCallbackHandler))
+}
+
+func rulesHandler(m *tb.Message) {
+	bot.Send(m.Chat, `
+<b>ПРАВИЛА ИГРЫ В КРОКОДИЛА</b>
+
+Есть ведущий и есть игроки, которые отгадывают слова.
+
+После нажатия /start@Crocodile_Game_Bot задача ведущего — нажать кнопку "Посмотреть слово" и объяснить его, не используя однокоренные слова.
+Если слово не нравится, то можно нажать "Следующее слово".
+Задача игроков — отгадать загаданное слово, для этого нужно просто писать их в чат, по одному слову в сообщении.
+`, tb.ModeHTML)
 }
