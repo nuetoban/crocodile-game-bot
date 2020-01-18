@@ -22,13 +22,12 @@ migrate-down:
 		'postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable' down 1
 
 run:
-	go run bot.go log.go exporter.go
+	go run .
 
 build:
 	go build -a \
 		-ldflags '-linkmode external -extldflags "-static"' \
-		-o crocodile-server \
-		bot.go log.go exporter.go
+		-o crocodile-server .
 
 get:
 	go get -v ./...
