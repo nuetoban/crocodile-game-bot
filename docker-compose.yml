@@ -13,3 +13,9 @@ services:
             - postgres_password=password
         ports:
             - 5432:5432
+    redis:
+        environment:
+            - ALLOW_EMPTY_PASSWORD=yes
+        image: 'bitnami/redis:latest'
+        ports:
+            - 6379:6379

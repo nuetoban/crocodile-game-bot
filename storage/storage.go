@@ -18,110 +18,22 @@
 
 package storage
 
-import (
-	"sync"
+import "github.com/gomodule/redigo/redis"
 
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/postgres"
-
-	"fmt"
-	"github.com/nuetoban/crocodile-game-bot/model"
-)
-
-type Postgres struct {
-	db    *gorm.DB
-	mutex *sync.Mutex
+type Storage struct {
+	*Postgres
+	*Redis
 }
 
-type KW map[string]interface{}
-
-func NewConnString(host, user, pass, dbname string, port int, kw KW) string {
-	baseString := fmt.Sprintf(
-		"host=%s port=%d user=%s dbname=%s password=%s",
-		host, port, user, dbname, pass,
-	)
-
-	for k, v := range kw {
-		baseString += fmt.Sprintf(" %s=%v", k, v)
-	}
-
-	return baseString
-}
-
-func NewPostgres(conn string) (*Postgres, error) {
-	db, err := gorm.Open("postgres", conn)
-
+func NewStorage(conn string, pool *redis.Pool) (*Storage, error) {
+	pg, err := NewPostgres(conn)
 	if err != nil {
-		return nil, err
+		return &Storage{}, err
 	}
 
-	return &Postgres{
-		db:    db,
-		mutex: &sync.Mutex{},
+	redis := NewRedis(pool)
+	return &Storage{
+		Postgres: pg,
+		Redis:    redis,
 	}, nil
-}
-
-func (p *Postgres) IncrementUserStats(givenUser model.UserInChat) error {
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
-
-	var user model.UserInChat
-
-	p.db.FirstOrCreate(&user, model.UserInChat{
-		ID:     givenUser.ID,
-		ChatID: givenUser.ChatID,
-	})
-
-	p.db.Table("user_in_chats").
-		Where("id = ? AND chat_id = ?", givenUser.ID, givenUser.ChatID).
-		Updates(map[string]interface{}{
-			"name":     givenUser.Name,
-			"was_host": user.WasHost + givenUser.WasHost,
-			"success":  user.Success + givenUser.Success,
-			"guessed":  user.Guessed + givenUser.Guessed,
-		})
-
-	return nil
-}
-
-func (p *Postgres) GetRating(chatID int64) ([]model.UserInChat, error) {
-	var users []model.UserInChat
-	p.db.Where("guessed > 0 AND chat_id = ?", chatID).Limit(25).Order("guessed desc").Find(&users)
-	return users, nil
-}
-
-func (p *Postgres) GetGlobalRating() ([]model.UserInChat, error) {
-	var users []model.UserInChat
-
-	rows, err := p.db.Table("user_in_chats").
-		Select("sum(\"guessed\") as guessed, (array_agg(\"name\"))[1] as name, \"id\"").
-		Group("id").
-		Limit(25).
-		Order("guessed desc").
-		Having("sum(\"guessed\") > ?", 0).
-		Rows()
-	if err != nil {
-		return users, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var user model.UserInChat
-		p.db.ScanRows(rows, &user)
-		users = append(users, user)
-	}
-
-	return users, nil
-}
-
-func (p *Postgres) GetStatistics() (model.Statistics, error) {
-	result := model.Statistics{}
-
-	p.db.Raw(`SELECT
-                 (SELECT COUNT(DISTINCT("chat_id")) FROM user_in_chats WHERE "id" != "chat_id") AS chats,
-                 (SELECT COUNT(DISTINCT("id")) FROM user_in_chats) AS users,
-                 (SELECT SUM("was_host") FROM user_in_chats) AS games_played;`).
-		Scan(&result)
-
-	return result, nil
 }

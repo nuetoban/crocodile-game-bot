@@ -21,7 +21,6 @@ package crocodile
 import (
 	"errors"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/looplab/fsm"
@@ -46,6 +45,8 @@ type WordsProvider interface {
 // Storage aims to save FSM state somewhere (e.g. in Redis)
 type Storage interface {
 	IncrementUserStats(model.UserInChat) error
+	SaveMachineState(Machine) error
+	LookupForMachine(*Machine) error
 }
 
 // Machine stores state of game in one chat
@@ -74,7 +75,8 @@ type Machine struct {
 	FSM           *fsm.FSM      `json:"-"`
 	Log           Logger        `json:"-"`
 
-	mutex *sync.Mutex
+	// We have to set this explicitly for saving state in external storage
+	State string
 }
 
 // MachineFabric aims to produce new machines with freezed Storage and WordsProvider
@@ -100,35 +102,35 @@ func NewMachineFabric(storage Storage, wp WordsProvider, log Logger) *MachineFab
 
 // NewMachine returns new Machine instance
 func NewMachine(storage Storage, wp WordsProvider, log Logger, chatID int64, mesID int) *Machine {
-	fsm := fsm.NewFSM(
-		"init",
-		fsm.Events{
-			{Name: "new_game", Src: []string{"init", "done"}, Dst: "game_started"},
-			{Name: "stop_game", Src: []string{"game_started"}, Dst: "done"},
-		},
-		fsm.Callbacks{},
-	)
-
 	m := &Machine{
 		ChatID:        chatID,
-		FSM:           fsm,
 		Storage:       storage,
 		WordsProvider: wp,
 		MesID:         mesID,
-		mutex:         &sync.Mutex{},
 		StartedTime:   time.Now(),
 		GuessedTime:   time.Now(),
 		Log:           log,
 	}
+
+	m.FSM = fsm.NewFSM(
+		"init",
+		fsm.Events{
+			{Name: "new_game", Src: []string{"init", "done"}, Dst: "game_started"},
+			{Name: "update", Src: []string{"game_started"}, Dst: "game_started"},
+			{Name: "stop_game", Src: []string{"game_started"}, Dst: "done"},
+		},
+		fsm.Callbacks{
+			"after_event": m.saveState,
+		},
+	)
+
+	m.lookupForMachine()
 
 	return m
 }
 
 // StartNewGameAndReturnWord sets m.Word to new words and returns it
 func (m *Machine) StartNewGameAndReturnWord(host int, hostName string) (string, error) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-
 	m.Log.Debugf("Starting new game, host: %d, hostName: %s", host, hostName)
 
 	if m.FSM.Cannot("new_game") {
@@ -151,6 +153,7 @@ func (m *Machine) StartNewGameAndReturnWord(host int, hostName string) (string, 
 
 	m.Host = host
 	m.StartedTime = time.Now()
+	m.HostName = hostName
 	m.FSM.Event("new_game")
 
 	m.Storage.IncrementUserStats(model.UserInChat{
@@ -159,7 +162,6 @@ func (m *Machine) StartNewGameAndReturnWord(host int, hostName string) (string, 
 		WasHost: 1,
 		Name:    hostName,
 	})
-	m.HostName = hostName
 
 	m.Log.Debugf("StartNewGameAndReturnWord: returning word: \"%s\"", m.Word)
 	return m.Word, nil
@@ -167,9 +169,6 @@ func (m *Machine) StartNewGameAndReturnWord(host int, hostName string) (string, 
 
 // SetNewRandomWord generates new word
 func (m *Machine) SetNewRandomWord() (string, error) {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-
 	var err error
 
 	m.Word, err = m.WordsProvider.GetWord()
@@ -177,6 +176,8 @@ func (m *Machine) SetNewRandomWord() (string, error) {
 		m.Log.Warningf("SetNewRandomWord: error during getting word: %v", err)
 		return "", err
 	}
+
+	m.FSM.Event("update")
 
 	m.Log.Tracef("SetNewRandomWord: setting word for chat (%d): %s", m.ChatID, m.Word)
 
@@ -205,9 +206,6 @@ func (m *Machine) CheckWord(word string) bool {
 
 // CheckWordAndSetWinner sets m.Winner and returns true if m.CheckWord() returns true, otherwise ret. false
 func (m *Machine) CheckWordAndSetWinner(word string, potentialWinner int, winnerName string) bool {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-
 	m.Log.Debugf(
 		"CheckWordAndSetWinner: checking word: %s, potentialWinner: %d, winnerName: %s, chatID: %d",
 		word, potentialWinner, winnerName, m.ChatID,
@@ -220,9 +218,10 @@ func (m *Machine) CheckWordAndSetWinner(word string, potentialWinner int, winner
 
 	if m.CheckWord(word) {
 		m.Log.Debugf("CheckWordAndSetWinner: stopping game, chatID: %d", m.ChatID)
-		m.FSM.Event("stop_game")
 		m.Winner = potentialWinner
 		m.GuessedTime = time.Now()
+
+		m.FSM.Event("stop_game")
 
 		winner := model.UserInChat{
 			ID:      m.Winner,
@@ -254,11 +253,33 @@ func (m *Machine) CheckWordAndSetWinner(word string, potentialWinner int, winner
 
 // StopGame sends stop_game event to FSM
 func (m *Machine) StopGame() error {
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
-
 	m.Log.Debugf("Stopping game, machine: %+v", m)
-
 	m.FSM.Event("stop_game")
 	return nil
+}
+
+func (m *Machine) saveState(e *fsm.Event) {
+	m.Log.Tracef("Saving machine state for chat (%d)", m.ChatID)
+
+	// Update State field
+	m.State = e.Dst
+
+	// Save state to Redis
+	err := m.Storage.SaveMachineState(*m)
+	if err != nil {
+		m.Log.Errorf("saveState: error:", err)
+	}
+}
+
+func (m *Machine) lookupForMachine() {
+	m.Log.Tracef("Restoring machine state for chat (%d)", m.ChatID)
+
+	err := m.Storage.LookupForMachine(m)
+	if err != nil {
+		m.Log.Errorf("lookupForMachine: error: %v", err)
+		return
+	}
+	if m.State != "" {
+		m.FSM.SetState(m.State)
+	}
 }
