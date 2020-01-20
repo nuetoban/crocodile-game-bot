@@ -6,10 +6,10 @@ docker-build:
 	docker build -t crocodile .
 
 docker-tag:
-	docker tag crocodile docker.pkg.github.com/nuetoban/crocodile-game-bot/crocodile:latest
+	docker tag crocodile nuetoban/crocodile:latest
 
 docker-push:
-	docker push docker.pkg.github.com/nuetoban/crocodile-game-bot/crocodile:latest
+	docker push nuetoban/crocodile:latest
 
 docker-full: docker-build docker-tag docker-push
 

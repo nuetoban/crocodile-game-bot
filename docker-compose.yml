@@ -2,7 +2,7 @@
 version: '3.3'
 services:
     application:
-        image: docker.pkg.github.com/nuetoban/crocodile-game-bot/crocodile:latest
+        image: nuetoban/crocodile:latest
         env_file: .env
         restart: on-failure
         depends_on:
