@@ -185,6 +185,10 @@ func main() {
 		setLogLevel("TRACE")
 	}
 
+	if os.Getenv("CROCODILE_GAME_LOGLEVEL") != "" {
+		setLogLevel(os.Getenv("CROCODILE_GAME_LOGLEVEL"))
+	}
+
 	log.Info("Loading words")
 	f, err := os.Open("dictionaries/word_rus_min.txt")
 	if err != nil {
