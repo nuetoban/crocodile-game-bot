@@ -132,7 +132,7 @@ type dbCredentials struct {
 
 func loggerMiddlewarePoller(upd *tb.Update) bool {
 	if upd.Message != nil && upd.Message.Chat != nil && upd.Message.Sender != nil {
-		log.Printf(
+		log.Debugf(
 			"Received update, chat: %d, chatTitle: \"%s\", user: %d",
 			upd.Message.Chat.ID,
 			upd.Message.Chat.Title,
