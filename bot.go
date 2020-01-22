@@ -60,6 +60,8 @@ var (
 	ratingGetter      RatingGetter
 	statisticsGetter  StatisticsGetter
 
+	rateLimiter *RateLimiter
+
 	DEBUG = false
 )
 
@@ -219,6 +221,8 @@ func main() {
 	fabric = crocodile.NewMachineFabric(pg, wordsProvider, log)
 	machines = make(map[int64]*crocodile.Machine)
 
+	rateLimiter = NewRateLimiter(redisPool)
+
 	log.Info("Connecting to Telegram API")
 	poller := &tb.LongPoller{Timeout: 15 * time.Second}
 	settings := tb.Settings{
@@ -288,7 +292,7 @@ func globalRatingHandler(m *tb.Message) {
 
 	ratingString := buildRating("Топ-25 <b>игроков в крокодила</b> во всех чатах 🐊", rating)
 
-	_, err = bot.Send(m.Chat, ratingString, tb.ModeHTML)
+	err = sendMessage(m.Chat, m.Chat.ID, ratingString)
 	if err != nil {
 		log.Errorf("globalRatingHandler: cannot send rating: %v", err)
 	}
@@ -323,10 +327,21 @@ func ratingHandler(m *tb.Message) {
 
 	ratingString := buildRating("Топ-25 <b>игроков в крокодила</b> 🐊", rating)
 
-	_, err = bot.Send(m.Chat, ratingString, tb.ModeHTML)
+	err = sendMessage(m.Chat, m.Chat.ID, ratingString)
 	if err != nil {
 		log.Errorf("ratingHandler: cannot send rating: %v", err)
 	}
+}
+
+func sendMessage(s tb.Recipient, chatID int64, text string) error {
+	err := rateLimiter.Limit(chatID,
+		func() error { _, err := bot.Send(s, text, tb.ModeHTML); return err },
+		func() error {
+			_, err := bot.Send(s, "Достигнут лимит по количеству сообщений в минуту!")
+			return err
+		},
+		func() error { return nil })
+	return err
 }
 
 func statsHandler(m *tb.Message) {
@@ -342,7 +357,7 @@ func statsHandler(m *tb.Message) {
 	outString += fmt.Sprintf("Количество игроков: %d\n", stats.Users)
 	outString += fmt.Sprintf("Всего игр: %d\n", stats.GamesPlayed)
 
-	_, err = bot.Send(m.Chat, outString, tb.ModeHTML)
+	err = sendMessage(m.Chat, m.Chat.ID, outString)
 	if err != nil {
 		log.Errorf("statsHandler: cannot send stats: %v", err)
 	}
@@ -361,7 +376,7 @@ func unlockChat(chatID int64) {
 
 func startNewGameHandler(m *tb.Message) {
 	if m.Private() {
-		bot.Send(m.Sender, "Добавить бота в чат: https://t.me/Crocodile_Game_Bot?startgroup=a ")
+		sendMessage(m.Sender, m.Chat.ID, "Добавить бота в чат: https://t.me/Crocodile_Game_Bot?startgroup=a ")
 		return
 	}
 
@@ -378,7 +393,7 @@ func startNewGameHandler(m *tb.Message) {
 			_, ms, _ := utils.CalculateTimeDiff(time.Now(), machine.GetStartedTime())
 
 			if ms < 2 {
-				bot.Send(m.Chat, "Игра уже начата! Ожидайте 2 минуты")
+				sendMessage(m.Chat, m.Chat.ID, "Игра уже начата! Ожидайте 2 минуты")
 				return
 			} else {
 				machine.StopGame()
@@ -507,7 +522,7 @@ func bindButtonsHandlers(bot *tb.Bot) {
 }
 
 func rulesHandler(m *tb.Message) {
-	bot.Send(m.Chat, `
+	sendMessage(m.Chat, m.Chat.ID, `
 <b>ПРАВИЛА ИГРЫ В КРОКОДИЛА</b>
 
 Есть ведущий и есть игроки, которые отгадывают слова.
@@ -515,5 +530,5 @@ func rulesHandler(m *tb.Message) {
 После нажатия /start@Crocodile_Game_Bot задача ведущего — нажать кнопку "Посмотреть слово" и объяснить его, не используя однокоренные слова.
 Если слово не нравится, то можно нажать "Следующее слово".
 Задача игроков — отгадать загаданное слово, для этого нужно просто писать их в чат, по одному слову в сообщении.
-`, tb.ModeHTML)
+`)
 }
