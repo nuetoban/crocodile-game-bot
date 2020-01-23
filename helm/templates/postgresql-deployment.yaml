@@ -1,0 +1,49 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose-prod.yml -o kubernetes -c
+    kompose.version: 1.19.0 ()
+  creationTimestamp: null
+  labels:
+    environment: {{.Values.env}}
+    io.kompose.service: postgresql
+  name: postgresql
+spec:
+  replicas: 1
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose-prod.yml -o kubernetes -c
+        kompose.version: 1.19.0 ()
+      creationTimestamp: null
+      labels:
+        environment: {{.Values.env}}
+        io.kompose.service: postgresql
+    spec:
+      containers:
+      - env:
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              key: POSTGRES_PASSWORD
+              name: env
+        image: postgres:alpine
+        name: postgresql
+        ports:
+        - containerPort: 5432
+        resources: {}
+        volumeMounts:
+          - mountPath: /var/lib/postgresql/data
+            name: crocodile-postgresql-volume
+      nodeSelector:
+        kubernetes.io/hostname: {{.Values.postgresNodeSelectorHostname}}
+      volumes:
+      - name: crocodile-postgresql-volume
+        hostPath:
+          path: {{.Values.postgresHostPath}}
+          type: DirectoryOrCreate
+      restartPolicy: Always
+status: {}

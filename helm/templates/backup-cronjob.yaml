@@ -1,0 +1,66 @@
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: crocodile-dumper
+  labels:
+    environment: {{.Values.env}}
+spec:
+  schedule: "0 12 * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: crocodile-dumper
+              image: postgres:alpine
+              command:
+                - /bin/sh
+              args:
+                - -c
+                - |-
+                  apk add --no-cache curl
+                  DBDUMPFILE="crocodile-dump-$(date '+%F')"
+                  PGPASSWORD="$CROCODILE_GAME_DB_PASS" \
+                      pg_dump \
+                          -U "$CROCODILE_GAME_DB_USER" \
+                          -h "$CROCODILE_GAME_DB_HOST" \
+                          -p "$CROCODILE_GAME_DB_PORT" \
+                          -W "$CROCODILE_GAME_DB_NAME" > "$DBDUMPFILE"
+                  curl -F "chat_id=$DUMPERCHATID" \
+                      -F document=@"$DBDUMPFILE" \
+                      "https://api.telegram.org/bot$CROCODILE_GAME_BOT_TOKEN/sendDocument"
+              env:
+                - name: CROCODILE_GAME_BOT_TOKEN
+                  valueFrom:
+                    configMapKeyRef:
+                      key: CROCODILE_GAME_BOT_TOKEN
+                      name: env
+                - name: CROCODILE_GAME_DB_HOST
+                  valueFrom:
+                    configMapKeyRef:
+                      key: CROCODILE_GAME_DB_HOST
+                      name: env
+                - name: CROCODILE_GAME_DB_NAME
+                  valueFrom:
+                    configMapKeyRef:
+                      key: CROCODILE_GAME_DB_NAME
+                      name: env
+                - name: CROCODILE_GAME_DB_PASS
+                  valueFrom:
+                    configMapKeyRef:
+                      key: POSTGRES_PASSWORD
+                      name: env
+                - name: CROCODILE_GAME_DB_PORT
+                  valueFrom:
+                    configMapKeyRef:
+                      key: CROCODILE_GAME_DB_PORT
+                      name: env
+                - name: CROCODILE_GAME_DB_USER
+                  valueFrom:
+                    configMapKeyRef:
+                      key: CROCODILE_GAME_DB_USER
+                      name: env
+                - name: DUMPERCHATID
+                  value: {{.Values.backupChatID}}
