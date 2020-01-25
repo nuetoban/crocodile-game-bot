@@ -1,9 +1,10 @@
 FROM golang:1.13.6-alpine3.11 AS build
 
 WORKDIR /build
-COPY . .
 
 RUN apk add --update make gcc libc-dev
+
+COPY . .
 RUN make
 
 

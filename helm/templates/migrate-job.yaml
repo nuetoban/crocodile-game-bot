@@ -1,0 +1,60 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: postgresql-migration
+  labels:
+    environment: {{.Values.env}}
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: crocodile-migrator
+        image: migrate/migrate:latest
+        command:
+          - sh
+          - -c
+          - >-
+            /migrate
+            -source github://$GITHUB_NAME:$GITHUB_TOKEN@nuetoban/crocodile-game-bot/migrations
+            -database
+            postgres://$USER:$PASS@$HOST:$PORT/$NAME?sslmode=disable
+            up
+        env:
+        - name: PASS
+          valueFrom:
+            configMapKeyRef:
+              key: POSTGRES_PASSWORD
+              name: env
+        - name: USER
+          valueFrom:
+            configMapKeyRef:
+              key: CROCODILE_GAME_DB_USER
+              name: env
+        - name: HOST
+          valueFrom:
+            configMapKeyRef:
+              key: CROCODILE_GAME_DB_HOST
+              name: env
+        - name: NAME
+          valueFrom:
+            configMapKeyRef:
+              key: CROCODILE_GAME_DB_NAME
+              name: env
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              key: CROCODILE_GAME_DB_PORT
+              name: env
+        - name: GITHUB_NAME
+          valueFrom:
+            configMapKeyRef:
+              key: GITHUB_NAME
+              name: env
+        - name: GITHUB_TOKEN
+          valueFrom:
+            configMapKeyRef:
+              key: GITHUB_TOKEN
+              name: env
+  backoffLimit: 3

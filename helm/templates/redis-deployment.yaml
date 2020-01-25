@@ -1,0 +1,47 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert -f docker-compose-prod.yml -o kubernetes -c
+    kompose.version: 1.19.0 ()
+  creationTimestamp: null
+  labels:
+    environment: {{.Values.env}}
+    io.kompose.service: redis
+  name: redis
+spec:
+  replicas: 1
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert -f docker-compose-prod.yml -o kubernetes -c
+        kompose.version: 1.19.0 ()
+      creationTimestamp: null
+      labels:
+        environment: {{.Values.env}}
+        io.kompose.service: redis
+    spec:
+      containers:
+      - env:
+        - name: ALLOW_EMPTY_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              key: ALLOW_EMPTY_PASSWORD
+              name: env
+        image: bitnami/redis:latest
+        name: redis
+        resources: {}
+        volumeMounts:
+          - mountPath: /bitnami/redis/data
+            name: crocodile-redis-volume
+      nodeSelector:
+        kubernetes.io/hostname: {{.Values.redisNodeSelectorHostname}}
+      volumes:
+      - name: crocodile-redis-volume
+        hostPath:
+          path: {{.Values.redisHostPath}}
+          type: DirectoryOrCreate
+      restartPolicy: Always
+status: {}

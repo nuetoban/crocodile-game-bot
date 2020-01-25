@@ -1,0 +1,14 @@
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: crocodile-{{.Values.env}}
+spec:
+  rules:
+    - host: {{.Values.domain}}
+      http:
+        paths:
+          - path: /
+            backend:
+              serviceName: crocodile-{{.Values.env}}
+              servicePort: 8080

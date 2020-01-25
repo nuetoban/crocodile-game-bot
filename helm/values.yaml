@@ -1,0 +1,18 @@
+---
+image: nuetoban/crocodile:latest
+
+env: ""
+logLevel: TRACE
+botToken: ""
+githubName: ""
+githubToken: ""
+
+postgresPassword: ""
+postgresHostPath: ""
+postgresNodeSelectorHostname: ""
+
+redisHostPath: ""
+redisNodeSelectorHostname: ""
+
+domain: ""
+backupChatID: "123456"
