@@ -56,6 +56,9 @@ type Machine struct {
 	// ChatID where the game is started
 	ChatID int64
 
+	// ChatTitle where the game is started
+	ChatTitle string
+
 	// Word which users should guess
 	Word string
 

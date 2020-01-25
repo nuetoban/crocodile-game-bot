@@ -116,6 +116,7 @@ func cleanupHook() {
 type RatingGetter interface {
 	GetRating(chatID int64) ([]model.UserInChat, error)
 	GetGlobalRating() ([]model.UserInChat, error)
+	GetChatsRating() ([]model.ChatStatistics, error)
 }
 
 type StatisticsGetter interface {
@@ -242,6 +243,7 @@ func main() {
 	bot.Handle("/cancel", func(m *tb.Message) {})
 	bot.Handle("/cstat", statsHandler)
 	bot.Handle("/rules", rulesHandler)
+	bot.Handle("/chatsrating", chatsRatingHandler)
 	bindButtonsHandlers(bot)
 
 	collector := newMetricsCollector(pg)
@@ -311,6 +313,25 @@ func buildRating(header string, data []model.UserInChat) string {
 			html.EscapeString(v.Name),
 			v.Guessed,
 			utils.DetectCaseAnswers(v.Guessed),
+		)
+	}
+
+	return out
+}
+
+func buildRatingChatStatistics(header string, data []model.ChatStatistics) string {
+	if len(data) < 1 {
+		return "Данных пока недостаточно!"
+	}
+
+	out := header + "\n\n"
+	for k, v := range data {
+		out += fmt.Sprintf(
+			"<b>%d</b>. %s — %d %s.\n",
+			k+1,
+			html.EscapeString(v.Title),
+			v.Guessed,
+			utils.DetectCaseForGames(v.Guessed),
 		)
 	}
 
@@ -531,4 +552,19 @@ func rulesHandler(m *tb.Message) {
 Если слово не нравится, то можно нажать "Следующее слово".
 Задача игроков — отгадать загаданное слово, для этого нужно просто писать их в чат, по одному слову в сообщении.
 `)
+}
+
+func chatsRatingHandler(m *tb.Message) {
+	rating, err := ratingGetter.GetChatsRating()
+	if err != nil {
+		log.Errorf("chatsRatingHandler: cannot get rating %v:", err)
+		return
+	}
+
+	ratingString := buildRatingChatStatistics("Топ-10 <b>чатов по количеству игр в крокодила</b>🐊", rating)
+
+	err = sendMessage(m.Chat, m.Chat.ID, ratingString)
+	if err != nil {
+		log.Errorf("chatsRatingHandler: cannot send rating: %v", err)
+	}
 }
