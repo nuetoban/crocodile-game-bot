@@ -32,6 +32,8 @@ import (
 type Postgres struct {
 	db    *gorm.DB
 	mutex *sync.Mutex
+
+	log Logger
 }
 
 type KW map[string]interface{}
@@ -49,12 +51,14 @@ func NewConnString(host, user, pass, dbname string, port int, kw KW) string {
 	return baseString
 }
 
-func NewPostgres(conn string) (*Postgres, error) {
+func NewPostgres(conn string, logger Logger) (*Postgres, error) {
 	db, err := gorm.Open("postgres", conn)
-
 	if err != nil {
 		return nil, err
 	}
+
+	db.SetLogger(logger)
+	db.LogMode(true)
 
 	return &Postgres{
 		db:    db,

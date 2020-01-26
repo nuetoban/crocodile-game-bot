@@ -209,7 +209,7 @@ func main() {
 		creds.Host, creds.User,
 		creds.Pass, creds.Name,
 		creds.Port, creds.KW,
-	), redisPool)
+	), redisPool, storage.WrapLogrus(log))
 	if err != nil {
 		log.Fatalf("Cannot connect to database (%s, %s) on host %s: %v", creds.User, creds.Name, creds.Host, err)
 	}
