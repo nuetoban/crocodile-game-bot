@@ -498,11 +498,16 @@ func seeWordCallbackHandler(c *tb.Callback) {
 func nextWordCallbackHandler(c *tb.Callback) {
 	m := fabric.NewMachine(c.Message.Chat.ID, c.Message.ID)
 	var message string
+	var err error
 
 	if c.Sender.ID != m.GetHost() {
 		message = "Это слово предназначено не для тебя!"
 	} else {
-		message, _ = m.SetNewRandomWord()
+		message, err = m.SetNewRandomWord()
+		if err != nil {
+			log.Errorf("nextWordCallbackHandler: cannot get word: %v", err)
+			return
+		}
 	}
 
 	bot.Respond(c, &tb.CallbackResponse{Text: message, ShowAlert: true})
