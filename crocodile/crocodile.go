@@ -22,6 +22,7 @@ import (
 	"errors"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/looplab/fsm"
 
@@ -201,11 +202,20 @@ func (m *Machine) GetWinner() int { return m.Winner }
 
 // CheckWord checks if m.Word == provided word
 func (m *Machine) CheckWord(word string) bool {
-	return strings.ReplaceAll(word, "ё", "е") == m.Word
+	// Preprocess word
+	processed := strings.ToLower(word)
+	processed = strings.ReplaceAll(processed, "ё", "е")
+	words := strings.FieldsFunc(processed, func(c rune) bool { return !unicode.IsLetter(c) && c != rune('-') })
+
+	// Compare last word
+	if len(words) > 0 {
+		return words[len(words)-1] == m.Word
+	}
+	return false
 }
 
 // CheckWordAndSetWinner sets m.Winner and returns true if m.CheckWord() returns true, otherwise ret. false
-func (m *Machine) CheckWordAndSetWinner(word string, potentialWinner int, winnerName string) bool {
+func (m *Machine) CheckWordAndSetWinner(word string, potentialWinner int, winnerName string) (string, bool) {
 	m.Log.Debugf(
 		"CheckWordAndSetWinner: checking word: %s, potentialWinner: %d, winnerName: %s, chatID: %d",
 		word, potentialWinner, winnerName, m.ChatID,
@@ -213,7 +223,7 @@ func (m *Machine) CheckWordAndSetWinner(word string, potentialWinner int, winner
 
 	if m.FSM.Current() != "game_started" {
 		m.Log.Debugf("CheckWordAndSetWinner: game is not in state \"game_started\", chatID: %d", m.ChatID)
-		return false
+		return "", false
 	}
 
 	if m.CheckWord(word) {
@@ -241,10 +251,10 @@ func (m *Machine) CheckWordAndSetWinner(word string, potentialWinner int, winner
 			m.Log.Errorf("CheckWordAndSetWinner: cannot increment host or winner stats: %v", err)
 		}
 
-		return true
+		return m.Word, true
 	}
 
-	return false
+	return "", false
 }
 
 // StopGame sends stop_game event to FSM

@@ -466,9 +466,8 @@ func textHandler(m *tb.Message) {
 	ma := fabric.NewMachine(m.Chat.ID, m.ID)
 
 	if ma.GetHost() != m.Sender.ID || DEBUG {
-		word := strings.TrimSpace(strings.ToLower(m.Text))
 		username := strings.TrimSpace(m.Sender.FirstName + " " + m.Sender.LastName)
-		if ma.CheckWordAndSetWinner(word, m.Sender.ID, username) {
+		if word, ok := ma.CheckWordAndSetWinner(m.Text, m.Sender.ID, username); ok {
 			bot.Send(
 				m.Chat,
 				fmt.Sprintf(
