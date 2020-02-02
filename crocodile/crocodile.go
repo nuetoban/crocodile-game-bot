@@ -44,7 +44,7 @@ type WordsProvider interface {
 
 // Storage aims to save FSM state somewhere (e.g. in Redis)
 type Storage interface {
-	IncrementUserStats(model.UserInChat) error
+	IncrementUserStats(...model.UserInChat) error
 	SaveMachineState(Machine) error
 	LookupForMachine(*Machine) error
 }
@@ -229,20 +229,16 @@ func (m *Machine) CheckWordAndSetWinner(word string, potentialWinner int, winner
 			Guessed: 1,
 			Name:    winnerName,
 		}
-		err := m.Storage.IncrementUserStats(winner)
-		if err != nil {
-			m.Log.Errorf("CheckWordAndSetWinner: cannot increment winner stats: %+v", winner)
-		}
-
 		host := model.UserInChat{
 			ID:      m.Host,
 			ChatID:  m.ChatID,
 			Success: 1,
 			Name:    m.HostName,
 		}
-		err = m.Storage.IncrementUserStats(host)
+
+		err := m.Storage.IncrementUserStats(host, winner)
 		if err != nil {
-			m.Log.Errorf("CheckWordAndSetWinner: cannot increment host stats: %+v", host)
+			m.Log.Errorf("CheckWordAndSetWinner: cannot increment host or winner stats: %v", err)
 		}
 
 		return true
