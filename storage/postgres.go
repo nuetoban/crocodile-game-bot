@@ -62,7 +62,7 @@ func NewPostgres(conn string, logger Logger) (*Postgres, error) {
 	}, nil
 }
 
-func (p *Postgres) IncrementUserStats(givenUser ...model.UserInChat) error {
+func (p *Postgres) IncrementUserStats(chat model.Chat, givenUser ...model.UserInChat) error {
 	tx := p.db.Begin()
 	defer func() {
 		if r := recover(); r != nil {
@@ -80,10 +80,26 @@ func (p *Postgres) IncrementUserStats(givenUser ...model.UserInChat) error {
 			err  error
 		)
 
+		err = tx.FirstOrCreate(&model.Chat{}, model.Chat{ID: chat.ID}).Error
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
 		err = tx.FirstOrCreate(&user, model.UserInChat{
 			ID:     u.ID,
 			ChatID: u.ChatID,
 		}).Error
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		err = tx.Table("chats").
+			Where("id = ?", chat.ID).
+			Updates(map[string]interface{}{
+				"title":     chat.Title,
+			}).Error
 		if err != nil {
 			tx.Rollback()
 			return err

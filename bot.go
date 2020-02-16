@@ -407,7 +407,7 @@ func startNewGameHandler(m *tb.Message) {
 
 	username := strings.TrimSpace(m.Sender.FirstName + " " + m.Sender.LastName)
 
-	_, err := machine.StartNewGameAndReturnWord(m.Sender.ID, username)
+	_, err := machine.StartNewGameAndReturnWord(m.Sender.ID, username, m.Chat.Title)
 
 	if err != nil {
 		if err.Error() == crocodile.ErrGameAlreadyStarted {
@@ -418,7 +418,7 @@ func startNewGameHandler(m *tb.Message) {
 				return
 			} else {
 				machine.StopGame()
-				_, err = machine.StartNewGameAndReturnWord(m.Sender.ID, username)
+				_, err = machine.StartNewGameAndReturnWord(m.Sender.ID, username, m.Chat.Title)
 				if err != nil {
 					log.Println(err)
 				}
@@ -446,7 +446,7 @@ func startNewGameHandlerCallback(c *tb.Callback) {
 	ma := fabric.NewMachine(m.Chat.ID, m.ID)
 
 	username := strings.TrimSpace(c.Sender.FirstName + " " + c.Sender.LastName)
-	_, err := ma.StartNewGameAndReturnWord(c.Sender.ID, username)
+	_, err := ma.StartNewGameAndReturnWord(c.Sender.ID, username, m.Chat.Title)
 
 	if err != nil {
 		if err.Error() == crocodile.ErrGameAlreadyStarted {
@@ -457,7 +457,7 @@ func startNewGameHandlerCallback(c *tb.Callback) {
 				return
 			} else {
 				ma.StopGame()
-				_, err = ma.StartNewGameAndReturnWord(c.Sender.ID, username)
+				_, err = ma.StartNewGameAndReturnWord(c.Sender.ID, username, m.Chat.Title)
 				if err != nil {
 					log.Println(err)
 				}
