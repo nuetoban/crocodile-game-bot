@@ -63,4 +63,4 @@ spec:
                       key: CROCODILE_GAME_DB_USER
                       name: env
                 - name: DUMPERCHATID
-                  value: {{.Values.backupChatID}}
+                  value: "{{.Values.backupChatID}}"

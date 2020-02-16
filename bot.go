@@ -210,7 +210,7 @@ func main() {
 		creds.Host, creds.User,
 		creds.Pass, creds.Name,
 		creds.Port, creds.KW,
-	), redisPool)
+	), redisPool, storage.WrapLogrus(log))
 	if err != nil {
 		log.Fatalf("Cannot connect to database (%s, %s) on host %s: %v", creds.User, creds.Name, creds.Host, err)
 	}
@@ -487,9 +487,8 @@ func textHandler(m *tb.Message) {
 	ma := fabric.NewMachine(m.Chat.ID, m.ID)
 
 	if ma.GetHost() != m.Sender.ID || DEBUG {
-		word := strings.TrimSpace(strings.ToLower(m.Text))
 		username := strings.TrimSpace(m.Sender.FirstName + " " + m.Sender.LastName)
-		if ma.CheckWordAndSetWinner(word, m.Sender.ID, username) {
+		if word, ok := ma.CheckWordAndSetWinner(m.Text, m.Sender.ID, username); ok {
 			bot.Send(
 				m.Chat,
 				fmt.Sprintf(
@@ -519,11 +518,16 @@ func seeWordCallbackHandler(c *tb.Callback) {
 func nextWordCallbackHandler(c *tb.Callback) {
 	m := fabric.NewMachine(c.Message.Chat.ID, c.Message.ID)
 	var message string
+	var err error
 
 	if c.Sender.ID != m.GetHost() {
 		message = "Это слово предназначено не для тебя!"
 	} else {
-		message, _ = m.SetNewRandomWord()
+		message, err = m.SetNewRandomWord()
+		if err != nil {
+			log.Errorf("nextWordCallbackHandler: cannot get word: %v", err)
+			return
+		}
 	}
 
 	bot.Respond(c, &tb.CallbackResponse{Text: message, ShowAlert: true})

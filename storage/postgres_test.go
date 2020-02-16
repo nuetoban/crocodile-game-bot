@@ -19,7 +19,6 @@
 package storage
 
 import (
-	"sync"
 	"testing"
 
 	"github.com/jinzhu/gorm"
@@ -39,8 +38,7 @@ func TestMain(m *testing.M) {
 	db.AutoMigrate(&model.UserInChat{})
 
 	p = &Postgres{
-		db:    db,
-		mutex: &sync.Mutex{},
+		db: db,
 	}
 
 	m.Run()

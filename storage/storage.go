@@ -25,8 +25,8 @@ type Storage struct {
 	*Redis
 }
 
-func NewStorage(conn string, pool *redis.Pool) (*Storage, error) {
-	pg, err := NewPostgres(conn)
+func NewStorage(conn string, pool *redis.Pool, logger Logger) (*Storage, error) {
+	pg, err := NewPostgres(conn, logger)
 	if err != nil {
 		return &Storage{}, err
 	}

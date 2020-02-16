@@ -19,8 +19,6 @@
 package storage
 
 import (
-	"sync"
-
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 
@@ -30,8 +28,9 @@ import (
 )
 
 type Postgres struct {
-	db    *gorm.DB
-	mutex *sync.Mutex
+	db *gorm.DB
+
+	log Logger
 }
 
 type KW map[string]interface{}
@@ -49,40 +48,63 @@ func NewConnString(host, user, pass, dbname string, port int, kw KW) string {
 	return baseString
 }
 
-func NewPostgres(conn string) (*Postgres, error) {
+func NewPostgres(conn string, logger Logger) (*Postgres, error) {
 	db, err := gorm.Open("postgres", conn)
-
 	if err != nil {
 		return nil, err
 	}
 
+	db.SetLogger(logger)
+	db.LogMode(true)
+
 	return &Postgres{
-		db:    db,
-		mutex: &sync.Mutex{},
+		db: db,
 	}, nil
 }
 
-func (p *Postgres) IncrementUserStats(givenUser model.UserInChat) error {
-	p.mutex.Lock()
-	defer p.mutex.Unlock()
+func (p *Postgres) IncrementUserStats(givenUser ...model.UserInChat) error {
+	tx := p.db.Begin()
+	defer func() {
+		if r := recover(); r != nil {
+			tx.Rollback()
+		}
+	}()
 
-	var user model.UserInChat
+	if err := tx.Error; err != nil {
+		return err
+	}
 
-	p.db.FirstOrCreate(&user, model.UserInChat{
-		ID:     givenUser.ID,
-		ChatID: givenUser.ChatID,
-	})
+	for _, u := range givenUser {
+		var (
+			user model.UserInChat
+			err  error
+		)
 
-	p.db.Table("user_in_chats").
-		Where("id = ? AND chat_id = ?", givenUser.ID, givenUser.ChatID).
-		Updates(map[string]interface{}{
-			"name":     givenUser.Name,
-			"was_host": user.WasHost + givenUser.WasHost,
-			"success":  user.Success + givenUser.Success,
-			"guessed":  user.Guessed + givenUser.Guessed,
-		})
+		err = tx.FirstOrCreate(&user, model.UserInChat{
+			ID:     u.ID,
+			ChatID: u.ChatID,
+		}).Error
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
 
-	return nil
+		err = tx.Table("user_in_chats").
+			Where("id = ? AND chat_id = ?", u.ID, u.ChatID).
+			Updates(map[string]interface{}{
+				"name":     u.Name,
+				"was_host": user.WasHost + u.WasHost,
+				"success":  user.Success + u.Success,
+				"guessed":  user.Guessed + u.Guessed,
+			}).Error
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+	}
+
+	return tx.Commit().Error
 }
 
 func (p *Postgres) GetRating(chatID int64) ([]model.UserInChat, error) {
