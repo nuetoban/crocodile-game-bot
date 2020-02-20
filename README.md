@@ -10,6 +10,30 @@ The main bot instance is here: https://t.me/Crocodile_Game_Bot
 go get -u github.com/nuetoban/crocodile-game-bot
 ```
 
+# Running
+1. Copy .env.example to .env and fill variables
+```
+cp .env{.example,}                               # Copy
+vim .env                                         # Edit
+source <(cat .env | awk '{print "export", $1}')  # Set variables
+```
+
+2. Run redis and postgresql
+```
+docker-compose up -d redis
+docker-compose up -d postgresql
+```
+
+3. Apply migrations — see "Database Migrations" section
+```
+make migrate-up
+```
+
+4. Run application
+```
+make run
+```
+
 ## Testing
 Execute this command:
 ```
