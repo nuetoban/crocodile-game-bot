@@ -10,7 +10,7 @@ The main bot instance is here: https://t.me/Crocodile_Game_Bot
 go get -u github.com/nuetoban/crocodile-game-bot
 ```
 
-# Running
+## Running
 1. Copy .env.example to .env and fill variables
 ```
 cp .env{.example,}                               # Copy
