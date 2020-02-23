@@ -45,7 +45,7 @@ type WordsProvider interface {
 
 // Storage aims to save FSM state somewhere (e.g. in Redis)
 type Storage interface {
-	IncrementUserStats(...model.UserInChat) error
+	IncrementUserStats(model.Chat, ...model.UserInChat) error
 	SaveMachineState(Machine) error
 	LookupForMachine(*Machine) error
 }
@@ -56,6 +56,9 @@ type Machine struct {
 
 	// ChatID where the game is started
 	ChatID int64
+
+	// ChatTitle where the game is started
+	ChatTitle string
 
 	// Word which users should guess
 	Word string
@@ -131,7 +134,7 @@ func NewMachine(storage Storage, wp WordsProvider, log Logger, chatID int64, mes
 }
 
 // StartNewGameAndReturnWord sets m.Word to new words and returns it
-func (m *Machine) StartNewGameAndReturnWord(host int, hostName string) (string, error) {
+func (m *Machine) StartNewGameAndReturnWord(host int, hostName string, chatTitle string) (string, error) {
 	m.Log.Debugf("Starting new game, host: %d, hostName: %s", host, hostName)
 
 	if m.FSM.Cannot("new_game") {
@@ -155,9 +158,13 @@ func (m *Machine) StartNewGameAndReturnWord(host int, hostName string) (string, 
 	m.Host = host
 	m.StartedTime = time.Now()
 	m.HostName = hostName
+	m.ChatTitle = chatTitle
 	m.FSM.Event("new_game")
 
-	m.Storage.IncrementUserStats(model.UserInChat{
+	m.Storage.IncrementUserStats(model.Chat{
+		ID: m.ChatID,
+		Title: m.ChatTitle,
+	}, model.UserInChat{
 		ID:      m.Host,
 		ChatID:  m.ChatID,
 		WasHost: 1,
@@ -246,7 +253,10 @@ func (m *Machine) CheckWordAndSetWinner(word string, potentialWinner int, winner
 			Name:    m.HostName,
 		}
 
-		err := m.Storage.IncrementUserStats(host, winner)
+		err := m.Storage.IncrementUserStats(model.Chat{
+			ID: m.ChatID,
+			Title: m.ChatTitle,
+		}, host, winner)
 		if err != nil {
 			m.Log.Errorf("CheckWordAndSetWinner: cannot increment host or winner stats: %v", err)
 		}

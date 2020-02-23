@@ -55,3 +55,21 @@ func DetectCaseAnswers(i int) string {
 	}
 	return "ответов"
 }
+
+func DetectCaseForGames(i int) string {
+	i %= 100
+	if 11 <= i && i <= 19 {
+		return "игр"
+	}
+
+	i %= 10
+	switch i {
+	case 0, 5, 6, 7, 8, 9:
+		return "игр"
+	case 1:
+		return "игра"
+	case 2, 3, 4:
+		return "игры"
+	}
+	return "игр"
+}

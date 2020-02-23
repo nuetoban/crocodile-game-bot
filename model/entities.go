@@ -37,3 +37,15 @@ type Statistics struct {
 	Users       int64
 	GamesPlayed int64
 }
+
+type Chat struct {
+	ID    int64
+	Title string
+}
+
+type ChatStatistics struct {
+	Title string
+
+	// How many games have been done
+	Guessed int
+}

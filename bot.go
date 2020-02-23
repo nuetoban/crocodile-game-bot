@@ -116,6 +116,7 @@ func cleanupHook() {
 type RatingGetter interface {
 	GetRating(chatID int64) ([]model.UserInChat, error)
 	GetGlobalRating() ([]model.UserInChat, error)
+	GetChatsRating() ([]model.ChatStatistics, error)
 }
 
 type StatisticsGetter interface {
@@ -242,6 +243,7 @@ func main() {
 	bot.Handle("/cancel", func(m *tb.Message) {})
 	bot.Handle("/cstat", statsHandler)
 	bot.Handle("/rules", rulesHandler)
+	bot.Handle("/chatrating", chatsRatingHandler)
 	bindButtonsHandlers(bot)
 
 	collector := newMetricsCollector(pg)
@@ -317,6 +319,25 @@ func buildRating(header string, data []model.UserInChat) string {
 	return out
 }
 
+func buildRatingChatStatistics(header string, data []model.ChatStatistics) string {
+	if len(data) < 1 {
+		return "Данных пока недостаточно!"
+	}
+
+	out := header + "\n\n"
+	for k, v := range data {
+		out += fmt.Sprintf(
+			"<b>%d</b>. %s — %d %s.\n",
+			k+1,
+			html.EscapeString(v.Title),
+			v.Guessed,
+			utils.DetectCaseForGames(v.Guessed),
+		)
+	}
+
+	return out
+}
+
 func ratingHandler(m *tb.Message) {
 	ratingTotal++
 	rating, err := ratingGetter.GetRating(m.Chat.ID)
@@ -386,7 +407,7 @@ func startNewGameHandler(m *tb.Message) {
 
 	username := strings.TrimSpace(m.Sender.FirstName + " " + m.Sender.LastName)
 
-	_, err := machine.StartNewGameAndReturnWord(m.Sender.ID, username)
+	_, err := machine.StartNewGameAndReturnWord(m.Sender.ID, username, m.Chat.Title)
 
 	if err != nil {
 		if err.Error() == crocodile.ErrGameAlreadyStarted {
@@ -397,7 +418,7 @@ func startNewGameHandler(m *tb.Message) {
 				return
 			} else {
 				machine.StopGame()
-				_, err = machine.StartNewGameAndReturnWord(m.Sender.ID, username)
+				_, err = machine.StartNewGameAndReturnWord(m.Sender.ID, username, m.Chat.Title)
 				if err != nil {
 					log.Println(err)
 				}
@@ -425,7 +446,7 @@ func startNewGameHandlerCallback(c *tb.Callback) {
 	ma := fabric.NewMachine(m.Chat.ID, m.ID)
 
 	username := strings.TrimSpace(c.Sender.FirstName + " " + c.Sender.LastName)
-	_, err := ma.StartNewGameAndReturnWord(c.Sender.ID, username)
+	_, err := ma.StartNewGameAndReturnWord(c.Sender.ID, username, m.Chat.Title)
 
 	if err != nil {
 		if err.Error() == crocodile.ErrGameAlreadyStarted {
@@ -436,7 +457,7 @@ func startNewGameHandlerCallback(c *tb.Callback) {
 				return
 			} else {
 				ma.StopGame()
-				_, err = ma.StartNewGameAndReturnWord(c.Sender.ID, username)
+				_, err = ma.StartNewGameAndReturnWord(c.Sender.ID, username, m.Chat.Title)
 				if err != nil {
 					log.Println(err)
 				}
@@ -535,4 +556,19 @@ func rulesHandler(m *tb.Message) {
 Если слово не нравится, то можно нажать "Следующее слово".
 Задача игроков — отгадать загаданное слово, для этого нужно просто писать их в чат, по одному слову в сообщении.
 `)
+}
+
+func chatsRatingHandler(m *tb.Message) {
+	rating, err := ratingGetter.GetChatsRating()
+	if err != nil {
+		log.Errorf("chatsRatingHandler: cannot get rating %v:", err)
+		return
+	}
+
+	ratingString := buildRatingChatStatistics("Топ-10 <b>чатов по количеству игр в крокодила</b>🐊", rating)
+
+	err = sendMessage(m.Chat, m.Chat.ID, ratingString)
+	if err != nil {
+		log.Errorf("chatsRatingHandler: cannot send rating: %v", err)
+	}
 }

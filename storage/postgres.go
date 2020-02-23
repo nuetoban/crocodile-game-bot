@@ -62,7 +62,7 @@ func NewPostgres(conn string, logger Logger) (*Postgres, error) {
 	}, nil
 }
 
-func (p *Postgres) IncrementUserStats(givenUser ...model.UserInChat) error {
+func (p *Postgres) IncrementUserStats(chat model.Chat, givenUser ...model.UserInChat) error {
 	tx := p.db.Begin()
 	defer func() {
 		if r := recover(); r != nil {
@@ -80,10 +80,26 @@ func (p *Postgres) IncrementUserStats(givenUser ...model.UserInChat) error {
 			err  error
 		)
 
+		err = tx.FirstOrCreate(&model.Chat{}, model.Chat{ID: chat.ID}).Error
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
 		err = tx.FirstOrCreate(&user, model.UserInChat{
 			ID:     u.ID,
 			ChatID: u.ChatID,
 		}).Error
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+
+		err = tx.Table("chats").
+			Where("id = ?", chat.ID).
+			Updates(map[string]interface{}{
+				"title":     chat.Title,
+			}).Error
 		if err != nil {
 			tx.Rollback()
 			return err
@@ -147,4 +163,30 @@ func (p *Postgres) GetStatistics() (model.Statistics, error) {
 		Scan(&result)
 
 	return result, nil
+}
+
+func (p *Postgres) GetChatsRating() ([]model.ChatStatistics, error) {
+	var chats []model.ChatStatistics
+
+	rows, err := p.db.Table("chats").
+		Select("sum(user_in_chats.\"guessed\") as guessed, chats.title").
+		Joins("inner join user_in_chats on user_in_chats.chat_id = chats.id").
+		Where("chats.title != ''").
+		Group("chats.id").
+		Order("guessed desc").
+		Limit(10).
+		Having("sum(\"guessed\") > ?", 0).
+		Rows()
+	if err != nil {
+		return chats, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var chat model.ChatStatistics
+		p.db.ScanRows(rows, &chat)
+		chats = append(chats, chat)
+	}
+
+	return chats, nil
 }
