@@ -471,7 +471,7 @@ func textHandler(m *tb.Message) {
 			bot.Send(
 				m.Chat,
 				fmt.Sprintf(
-					"%s отгадал слово <b>%s</b>",
+					"%s отгадал(а) слово <b>%s</b>",
 					username, word,
 				),
 				tb.ModeHTML,
