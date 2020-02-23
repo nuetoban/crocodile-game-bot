@@ -243,7 +243,7 @@ func main() {
 	bot.Handle("/cancel", func(m *tb.Message) {})
 	bot.Handle("/cstat", statsHandler)
 	bot.Handle("/rules", rulesHandler)
-	bot.Handle("/chatsrating", chatsRatingHandler)
+	bot.Handle("/chatrating", chatsRatingHandler)
 	bindButtonsHandlers(bot)
 
 	collector := newMetricsCollector(pg)
