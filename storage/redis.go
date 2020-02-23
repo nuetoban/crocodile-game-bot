@@ -41,7 +41,7 @@ func (r *Redis) SaveMachineState(m crocodile.Machine) error {
 
 	key := "machine/" + strconv.Itoa(int(m.ChatID))
 	conn.Do("SET", key, string(j))
-	conn.Do("EXPIRE", key, "900")
+	conn.Do("EXPIRE", key, "86400")
 
 	return nil
 }
