@@ -1,5 +1,5 @@
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   annotations:
@@ -13,6 +13,9 @@ metadata:
 spec:
   replicas: 1
   strategy: {}
+  selector:
+    matchLabels:
+      name: postgresql
   template:
     metadata:
       annotations:
@@ -22,6 +25,7 @@ spec:
       labels:
         environment: {{.Values.env}}
         io.kompose.service: postgresql
+        name: postgresql
     spec:
       containers:
       - env:
