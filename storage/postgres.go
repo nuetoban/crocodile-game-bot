@@ -174,7 +174,7 @@ func (p *Postgres) GetChatsRating() ([]model.ChatStatistics, error) {
 		Where("chats.title != ''").
 		Group("chats.id").
 		Order("guessed desc").
-		Limit(10).
+		Limit(25).
 		Having("sum(\"guessed\") > ?", 0).
 		Rows()
 	if err != nil {
