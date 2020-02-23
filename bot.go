@@ -357,7 +357,7 @@ func ratingHandler(m *tb.Message) {
 
 func sendMessage(s tb.Recipient, chatID int64, text string) error {
 	err := rateLimiter.Limit(chatID,
-		func() error { _, err := bot.Send(s, text, tb.ModeHTML); return err },
+		func() error { _, err := bot.Send(s, text, tb.ModeHTML, tb.NoPreview); return err },
 		func() error {
 			_, err := bot.Send(s, "Достигнут лимит по количеству сообщений в минуту!")
 			return err
