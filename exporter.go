@@ -15,6 +15,7 @@ type metricsCollector struct {
 	ratingTotal         *prometheus.Desc
 	globalRatingTotal   *prometheus.Desc
 	cstatTotal          *prometheus.Desc
+	chatsRatingTotal    *prometheus.Desc
 }
 
 func newMetricsCollector(sg StatisticsGetter) *metricsCollector {
@@ -52,6 +53,10 @@ func newMetricsCollector(sg StatisticsGetter) *metricsCollector {
 			"Shows how many times /cstat command has been called",
 			nil, nil,
 		),
+		chatsRatingTotal: prometheus.NewDesc("chatrating_total",
+			"Shows how many times /chatrating command has been called",
+			nil, nil,
+		),
 	}
 }
 
@@ -65,6 +70,7 @@ func (c *metricsCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.ratingTotal
 	ch <- c.globalRatingTotal
 	ch <- c.cstatTotal
+	ch <- c.chatsRatingTotal
 }
 
 // Collect implements required collect function for all promehteus collectors
@@ -80,4 +86,5 @@ func (c *metricsCollector) Collect(ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(c.ratingTotal, prometheus.CounterValue, ratingTotal)
 	ch <- prometheus.MustNewConstMetric(c.globalRatingTotal, prometheus.CounterValue, globalRatingTotal)
 	ch <- prometheus.MustNewConstMetric(c.cstatTotal, prometheus.CounterValue, cstatTotal)
+	ch <- prometheus.MustNewConstMetric(c.chatsRatingTotal, prometheus.CounterValue, chatsRatingTotal)
 }

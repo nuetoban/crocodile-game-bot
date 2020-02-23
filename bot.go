@@ -54,6 +54,7 @@ var (
 	ratingTotal         float64
 	globalRatingTotal   float64
 	cstatTotal          float64
+	chatsRatingTotal    float64
 
 	wordsInlineKeys   [][]tb.InlineButton
 	newGameInlineKeys [][]tb.InlineButton
@@ -356,7 +357,7 @@ func ratingHandler(m *tb.Message) {
 
 func sendMessage(s tb.Recipient, chatID int64, text string) error {
 	err := rateLimiter.Limit(chatID,
-		func() error { _, err := bot.Send(s, text, tb.ModeHTML); return err },
+		func() error { _, err := bot.Send(s, text, tb.ModeHTML, tb.NoPreview); return err },
 		func() error {
 			_, err := bot.Send(s, "Достигнут лимит по количеству сообщений в минуту!")
 			return err
@@ -559,6 +560,7 @@ func rulesHandler(m *tb.Message) {
 }
 
 func chatsRatingHandler(m *tb.Message) {
+	chatsRatingTotal++
 	rating, err := ratingGetter.GetChatsRating()
 	if err != nil {
 		log.Errorf("chatsRatingHandler: cannot get rating %v:", err)
