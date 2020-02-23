@@ -10,7 +10,7 @@ services:
     postgresql:
         image: postgres:alpine
         environment:
-            - postgres_password=password
+            - POSTGRES_PASSWORD=password
         ports:
             - 5432:5432
     redis:
