@@ -54,6 +54,7 @@ var (
 	ratingTotal         float64
 	globalRatingTotal   float64
 	cstatTotal          float64
+	chatsRatingTotal    float64
 
 	wordsInlineKeys   [][]tb.InlineButton
 	newGameInlineKeys [][]tb.InlineButton
@@ -559,6 +560,7 @@ func rulesHandler(m *tb.Message) {
 }
 
 func chatsRatingHandler(m *tb.Message) {
+	chatsRatingTotal++
 	rating, err := ratingGetter.GetChatsRating()
 	if err != nil {
 		log.Errorf("chatsRatingHandler: cannot get rating %v:", err)
