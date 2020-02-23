@@ -565,7 +565,7 @@ func chatsRatingHandler(m *tb.Message) {
 		return
 	}
 
-	ratingString := buildRatingChatStatistics("Топ-10 <b>чатов по количеству игр в крокодила</b>🐊", rating)
+	ratingString := buildRatingChatStatistics("Топ-25 <b>чатов по количеству игр в крокодила</b>🐊", rating)
 
 	err = sendMessage(m.Chat, m.Chat.ID, ratingString)
 	if err != nil {
