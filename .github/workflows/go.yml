@@ -19,6 +19,26 @@ jobs:
       
     - name: Test
       run: go test ./...
+    
+    - name: Notify
+      run: >-
+        curl -s "https://api.telegram.org/bot$BTOKEN/sendMessage" \
+          --data-urlencode "chat_id=-1001493773956" \
+          --data-urlencode "text=Go Test for \`$GITHUB_REF\`: SUCCESS"$'\n'"https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+          --data-urlencode "parse_mode=Markdown"
+      env:
+        BTOKEN: ${{ secrets.BTOKEN }}
+      if: success()
+      
+    - name: Notify
+      run: >-
+        curl -s "https://api.telegram.org/bot$BTOKEN/sendMessage" \
+          --data-urlencode "chat_id=-1001493773956" \
+          --data-urlencode "text=Go Test for \`$GITHUB_REF\`: FAILURE"$'\n'"https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+          --data-urlencode "parse_mode=Markdown"
+      env:
+        BTOKEN: ${{ secrets.BTOKEN }}
+      if: failure()
 
   build:
     name: Build
