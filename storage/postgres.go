@@ -168,7 +168,6 @@ func (p *Postgres) GetStatistics() (model.Statistics, error) {
 func (p *Postgres) GetChatsRating() ([]model.ChatStatistics, error) {
 	var chats []model.ChatStatistics
 
-	p.db.LogMode(true)
 	rows, err := p.db.Table("chats").
 		Select("sum(user_in_chats.\"guessed\") as guessed, chats.title").
 		Joins("inner join user_in_chats on user_in_chats.chat_id = chats.id").
@@ -188,7 +187,6 @@ func (p *Postgres) GetChatsRating() ([]model.ChatStatistics, error) {
 		p.db.ScanRows(rows, &chat)
 		chats = append(chats, chat)
 	}
-	p.db.LogMode(false)
 
 	return chats, nil
 }
