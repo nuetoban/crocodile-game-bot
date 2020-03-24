@@ -4,6 +4,8 @@ image: nuetoban/crocodile:latest
 env: ""
 logLevel: TRACE
 botToken: ""
+webhookAddr: ""
+webhookPath: ""
 githubName: ""
 githubToken: ""
 

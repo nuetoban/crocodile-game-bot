@@ -11,8 +11,12 @@ metadata:
     io.kompose.service: backend
   name: backend
 spec:
-  replicas: 1
-  strategy: {}
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
   selector:
     matchLabels:
       name: backend
@@ -69,6 +73,11 @@ spec:
             configMapKeyRef:
               key: CROCODILE_GAME_LOGLEVEL
               name: env
+        - name: CROCODILE_GAME_WEBHOOK
+          valueFrom:
+            configMapKeyRef:
+              key: CROCODILE_GAME_WEBHOOK
+              name: env
         - name: REDIS_HOST
           valueFrom:
             configMapKeyRef:
@@ -82,7 +91,24 @@ spec:
         name: backend
         ports:
         - containerPort: 8080
+        - containerPort: 9999
         resources: {}
         imagePullPolicy: Always
+        livenessProbe:
+          httpGet:
+            path: {{.Values.webhookPath}}
+            port: 9999
+          initialDelaySeconds: 15
+          periodSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: {{.Values.webhookPath}}
+            port: 9999
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 10"]
       restartPolicy: Always
 status: {}

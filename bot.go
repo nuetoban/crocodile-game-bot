@@ -226,7 +226,18 @@ func main() {
 	rateLimiter = NewRateLimiter(redisPool)
 
 	log.Info("Connecting to Telegram API")
-	poller := &tb.LongPoller{Timeout: 15 * time.Second}
+	var poller tb.Poller
+	if os.Getenv("CROCODILE_GAME_WEBHOOK") != "" {
+		poller = &tb.Webhook{
+			Endpoint: &tb.WebhookEndpoint{
+				PublicURL: os.Getenv("CROCODILE_GAME_WEBHOOK"),
+			},
+			Listen: "0.0.0.0:9999",
+		}
+	} else {
+		poller = &tb.LongPoller{Timeout: 15 * time.Second}
+	}
+
 	settings := tb.Settings{
 		Token:  os.Getenv("CROCODILE_GAME_BOT_TOKEN"),
 		Poller: tb.NewMiddlewarePoller(poller, loggerMiddlewarePoller),
