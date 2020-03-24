@@ -18,3 +18,4 @@ redisNodeSelectorHostname: ""
 
 domain: ""
 backupChatID: "123456"
+livenessProbeChatID: "123456"

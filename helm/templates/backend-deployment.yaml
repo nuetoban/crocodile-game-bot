@@ -95,11 +95,25 @@ spec:
         resources: {}
         imagePullPolicy: Always
         livenessProbe:
-          httpGet:
-            path: {{.Values.webhookPath}}
-            port: 9999
+          exec:
+            command:
+              - /bin/sh
+              - -c
+              - |-
+                curl http://localhost:9999{{.Values.webhookPath}} -X POST -d '{
+                  "update_id": 1000,
+                  "message": {
+                    "message_id": 1000,
+                    "from": { "id": 150804080, "is_bot": false, "first_name": "Viktor",
+                    "last_name": "%", "username": "blackstalin", "language_code": "en" },
+                    "chat": { "id": {{.Values.livenessProbeChatID}}, "title": "Healthcheck", "type": "supergroup" },
+                    "date": 1585085879,
+                    "text": "/start@Crocodile_Game_Bot",
+                    "entities": [{"offset":0,"length":25,"type":"bot_command"}
+                  ]}}'
           initialDelaySeconds: 15
-          periodSeconds: 5
+          periodSeconds: 30
+          timeoutSeconds: 5
         readinessProbe:
           httpGet:
             path: {{.Values.webhookPath}}

@@ -10,7 +10,7 @@ RUN make
 
 FROM alpine:3.11
 
-RUN apk add --no-cache ca-certificates
+RUN apk add --no-cache ca-certificates curl
 COPY --from=build /build/crocodile-server /crocodile-server
 COPY dictionaries /dictionaries/
 
