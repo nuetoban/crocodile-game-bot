@@ -473,16 +473,25 @@ func startNewGameHandlerCallback(c *tb.Callback) {
 				if err != nil {
 					log.Println(err)
 				}
+				bot.Respond(c, &tb.CallbackResponse{
+					Text:      fmt.Sprintf("Ты — ведущий, твое слово — %s", ma.GetWord()),
+					ShowAlert: true,
+				})
 			}
 		} else if err.Error() == crocodile.ErrWaitingForWinnerRespond {
 			bot.Respond(c, &tb.CallbackResponse{Text: "У победителя есть 5 секунд на решение!"})
 			return
 		} else {
 			log.Println(err)
+			bot.Respond(c, &tb.CallbackResponse{Text: "."})
 			return
 		}
 	}
 
+	bot.Respond(c, &tb.CallbackResponse{
+		Text:      fmt.Sprintf("Ты — ведущий, твое слово — %s", ma.GetWord()),
+		ShowAlert: true,
+	})
 	bot.Send(
 		m.Chat,
 		fmt.Sprintf(
@@ -538,6 +547,7 @@ func nextWordCallbackHandler(c *tb.Callback) {
 		message, err = m.SetNewRandomWord()
 		if err != nil {
 			log.Errorf("nextWordCallbackHandler: cannot get word: %v", err)
+			bot.Respond(c, &tb.CallbackResponse{Text: message, ShowAlert: true})
 			return
 		}
 	}
