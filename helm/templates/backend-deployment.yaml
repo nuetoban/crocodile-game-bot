@@ -92,7 +92,13 @@ spec:
         ports:
         - containerPort: 8080
         - containerPort: 9999
-        resources: {}
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "75m"
+          limits:
+            memory: "96Mi"
+            cpu: "200m"
         imagePullPolicy: Always
         livenessProbe:
           exec:
