@@ -1,3 +1,6 @@
+IMAGE := "nuetoban/crocodile"
+TAG := $(shell git describe --tags)
+
 .PHONY: build run docker-build docker-tag docker-push migrate-up migrate-down get test graph wc
 
 default: build
@@ -6,12 +9,19 @@ docker-build:
 	docker build -t crocodile .
 
 docker-tag:
-	docker tag crocodile nuetoban/crocodile:latest
+	docker tag crocodile nuetoban/crocodile:$(TAG)
 
 docker-push:
-	docker push nuetoban/crocodile:latest
+	docker push nuetoban/crocodile:$(TAG)
 
 docker-full: docker-build docker-tag docker-push
+
+deploy: docker-full
+	helm \
+		--namespace crocodile-prod \
+		upgrade crocodile ./helm \
+		-f helm/values-prod.yaml \
+		--set tag=$(TAG)
 
 migrate-up:
 	migrate -source file://migrations \

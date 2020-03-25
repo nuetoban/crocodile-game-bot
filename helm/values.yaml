@@ -1,5 +1,6 @@
 ---
-image: nuetoban/crocodile:latest
+image: nuetoban/crocodile
+tag: ""
 
 env: ""
 logLevel: TRACE

@@ -87,7 +87,7 @@ spec:
         - name: CROCODILE_GAME_DEV
           value: "true"
 {{- end }}
-        image: {{.Values.image}}
+        image: {{.Values.image}}:{{.Values.tag}}
         name: backend
         ports:
         - containerPort: 8080
