@@ -249,14 +249,14 @@ func main() {
 	}
 
 	log.Info("Binding handlers")
-	bot.Handle(tb.OnText, mustLock(textHandler))
-	bot.Handle("/start", mustLock(startNewGameHandler))
-	bot.Handle("/rating", ratingHandler)
-	bot.Handle("/globalrating", globalRatingHandler)
+	bot.Handle(tb.OnText, logDuration(mustLock(textHandler)))
+	bot.Handle("/start", logDuration(mustLock(startNewGameHandler)))
+	bot.Handle("/rating", logDuration(ratingHandler))
+	bot.Handle("/globalrating", logDuration(globalRatingHandler))
 	bot.Handle("/cancel", func(m *tb.Message) {})
-	bot.Handle("/cstat", statsHandler)
-	bot.Handle("/rules", rulesHandler)
-	bot.Handle("/chatrating", chatsRatingHandler)
+	bot.Handle("/cstat", logDuration(statsHandler))
+	bot.Handle("/rules", logDuration(rulesHandler))
+	bot.Handle("/chatrating", logDuration(chatsRatingHandler))
 	bindButtonsHandlers(bot)
 
 	collector := newMetricsCollector(pg)
@@ -269,6 +269,20 @@ func main() {
 
 	log.Info("Starting the bot")
 	bot.Start()
+}
+
+// Decorator for logging duration of function execution
+func logDuration(f func(*tb.Message)) func(*tb.Message) {
+	return func(m *tb.Message) {
+		start := time.Now()
+		f(m)
+		diff := time.Now().Sub(start)
+		if diff.Seconds() > 1 {
+			log.Warnf("Took %s time to complete update processing", time.Time{}.Add(diff).Format("04:05.000"))
+		} else {
+			log.Tracef("Took %s time to complete update processing", time.Time{}.Add(diff).Format("04:05.000"))
+		}
+	}
 }
 
 // Decorator for distributed lock for chat (messages handlers)
