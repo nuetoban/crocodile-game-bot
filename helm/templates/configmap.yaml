@@ -16,6 +16,8 @@ data:
   GITHUB_TOKEN: {{.Values.githubToken}}
   REDIS_ADDR: redis://localhost:6379
   REDIS_EXPORTER_WEB_TELEMETRY_PATH: /redis-metrics
+  DATA_SOURCE_URI: localhost:5432/postgres?sslmode=disable
+  PG_EXPORTER_WEB_TELEMETRY_PATH: /postgresql-metrics
 kind: ConfigMap
 metadata:
   creationTimestamp: null
