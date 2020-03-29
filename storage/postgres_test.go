@@ -66,7 +66,7 @@ func TestPostgresIncrementUserStats(t *testing.T) {
 	}
 
 	// Start testing
-	p.IncrementUserStats(chat, user)
+	p.IncrementUserStats(model.Chat{}, user)
 	p.db.First(&u)
 	t.Logf("User: %#v\n", u)
 
@@ -76,7 +76,7 @@ func TestPostgresIncrementUserStats(t *testing.T) {
 	c("Name - first", "test-name", u.Name)
 
 	// Do the same one more time
-	p.IncrementUserStats(chat, user)
+	p.IncrementUserStats(model.Chat{}, user)
 	p.db.First(&u)
 	t.Logf("User: %#v\n", u)
 
