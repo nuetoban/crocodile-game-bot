@@ -28,20 +28,46 @@ spec:
         name: postgresql
     spec:
       containers:
-      - env:
+      - name: postgresql
+        image: postgres:alpine
+        ports:
+        - containerPort: 5432
+        env:
         - name: POSTGRES_PASSWORD
           valueFrom:
             configMapKeyRef:
               key: POSTGRES_PASSWORD
               name: env
-        image: postgres:alpine
-        name: postgresql
-        ports:
-        - containerPort: 5432
         resources: {}
         volumeMounts:
-          - mountPath: /var/lib/postgresql/data
-            name: crocodile-postgresql-volume
+        - mountPath: /var/lib/postgresql/data
+          name: crocodile-postgresql-volume
+      - name: postgresql-exporter
+        image: wrouesnel/postgres_exporter
+        ports:
+        - containerPort: 9187
+        env:
+        - name: DATA_SOURCE_URI
+          valueFrom:
+            configMapKeyRef:
+              key: DATA_SOURCE_URI
+              name: env
+        - name: DATA_SOURCE_USER
+          valueFrom:
+            configMapKeyRef:
+              key: CROCODILE_GAME_DB_USER
+              name: env
+        - name: DATA_SOURCE_PASS
+          valueFrom:
+            configMapKeyRef:
+              key: POSTGRES_PASSWORD
+              name: env
+        - name: PG_EXPORTER_WEB_TELEMETRY_PATH
+          valueFrom:
+            configMapKeyRef:
+              key: PG_EXPORTER_WEB_TELEMETRY_PATH
+              name: env
+        resources: {}
       nodeSelector:
         kubernetes.io/hostname: {{.Values.postgresNodeSelectorHostname}}
       volumes:
