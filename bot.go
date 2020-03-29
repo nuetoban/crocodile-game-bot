@@ -21,11 +21,13 @@ package main
 import (
 	"fmt"
 	"html"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -43,7 +45,7 @@ import (
 
 var (
 	mutexFabric *redsync.Redsync
-	locks       map[int64]*redsync.Mutex
+	locks       map[int64]*sync.Mutex
 	machines    map[int64]*crocodile.Machine
 	fabric      *crocodile.MachineFabric
 	bot         *tb.Bot
@@ -56,6 +58,8 @@ var (
 	cstatTotal          float64
 	chatsRatingTotal    float64
 
+	updatesProcessed int
+
 	wordsInlineKeys   [][]tb.InlineButton
 	newGameInlineKeys [][]tb.InlineButton
 	ratingGetter      RatingGetter
@@ -67,7 +71,7 @@ var (
 )
 
 func init() {
-	locks = make(map[int64]*redsync.Mutex)
+	locks = make(map[int64]*sync.Mutex)
 
 	redisHost := os.Getenv("REDIS_HOST")
 	if redisHost == "" {
@@ -82,7 +86,7 @@ func init() {
 func newPool(server string) *redis.Pool {
 	return &redis.Pool{
 		MaxIdle:     200,
-		MaxActive:   1024,
+		MaxActive:   10000,
 		IdleTimeout: 240 * time.Second,
 		Dial: func() (redis.Conn, error) {
 			c, err := redis.Dial("tcp", server)
@@ -144,6 +148,7 @@ func loggerMiddlewarePoller(upd *tb.Update) bool {
 			upd.Message.Sender.ID,
 		)
 	}
+	updatesProcessed++
 	return true
 }
 
@@ -236,17 +241,22 @@ func main() {
 			Listen: "0.0.0.0:9999",
 		}
 	} else {
-		poller = &tb.LongPoller{Timeout: 15 * time.Second}
+		poller = &tb.LongPoller{Timeout: 5 * time.Second}
 	}
 
+	mp := tb.NewMiddlewarePoller(poller, loggerMiddlewarePoller)
+	mp.Capacity = 10000
+
 	settings := tb.Settings{
-		Token:  os.Getenv("CROCODILE_GAME_BOT_TOKEN"),
-		Poller: tb.NewMiddlewarePoller(poller, loggerMiddlewarePoller),
+		Token:   os.Getenv("CROCODILE_GAME_BOT_TOKEN"),
+		Poller:  mp,
+		Updates: 10000,
 	}
 	bot, err = tb.NewBot(settings)
 	if err != nil {
 		log.Fatalf("Cannot connect to Telegram API: %v", err)
 	}
+	pg.SetBotID(bot.Me.ID)
 
 	log.Info("Binding handlers")
 	bot.Handle(tb.OnText, logDuration(mustLock(textHandler)))
@@ -267,6 +277,24 @@ func main() {
 	log.Info("Starting metrics exporter server")
 	go http.ListenAndServe(":8080", nil)
 
+	go func() {
+		var err error
+		for {
+			time.Sleep(time.Second * 15)
+
+			if updatesProcessed == 0 {
+				err = ioutil.WriteFile("/tmp/crocostatus", []byte("BAD"), 0644)
+			} else {
+				err = ioutil.WriteFile("/tmp/crocostatus", []byte("GOOD"), 0644)
+			}
+
+			updatesProcessed = 0
+			if err != nil {
+				panic(err)
+			}
+		}
+	}()
+
 	log.Info("Starting the bot")
 	bot.Start()
 }
@@ -285,29 +313,49 @@ func logDuration(f func(*tb.Message)) func(*tb.Message) {
 	}
 }
 
+// Decorator for logging duration of function execution (callback handlers)
+func logDurationCallback(f func(*tb.Callback)) func(*tb.Callback) {
+	return func(c *tb.Callback) {
+		start := time.Now()
+		f(c)
+		diff := time.Now().Sub(start)
+		if diff.Seconds() > 1 {
+			log.Warnf("Took %s time to complete update processing (cb)", time.Time{}.Add(diff).Format("04:05.000"))
+		} else {
+			log.Tracef("Took %s time to complete update processing (cb)", time.Time{}.Add(diff).Format("04:05.000"))
+		}
+	}
+}
+
 // Decorator for distributed lock for chat (messages handlers)
 func mustLock(f func(*tb.Message)) func(*tb.Message) {
 	return func(m *tb.Message) {
-		log.Tracef("Locking chat %d", m.Chat.ID)
-		lockChat(m.Chat.ID)
+		go func() {
+			m := m
+			log.Tracef("Locking chat %d", m.Chat.ID)
+			lockChat(m.Chat.ID)
 
-		f(m)
+			f(m)
 
-		log.Tracef("Unlocking chat %d", m.Chat.ID)
-		unlockChat(m.Chat.ID)
+			log.Tracef("Unlocking chat %d", m.Chat.ID)
+			unlockChat(m.Chat.ID)
+		}()
 	}
 }
 
 // Decorator for distributed lock for chat (callback handlers)
 func mustLockCallback(f func(*tb.Callback)) func(*tb.Callback) {
 	return func(c *tb.Callback) {
-		log.Tracef("Locking chat %d", c.Message.Chat.ID)
-		lockChat(c.Message.Chat.ID)
+		go func() {
+			c := c
+			log.Tracef("Locking chat %d", c.Message.Chat.ID)
+			lockChat(c.Message.Chat.ID)
 
-		f(c)
+			f(c)
 
-		log.Tracef("Unlocking chat %d", c.Message.Chat.ID)
-		unlockChat(c.Message.Chat.ID)
+			log.Tracef("Unlocking chat %d", c.Message.Chat.ID)
+			unlockChat(c.Message.Chat.ID)
+		}()
 	}
 }
 
@@ -411,14 +459,30 @@ func statsHandler(m *tb.Message) {
 	}
 }
 
-func lockChat(chatID int64) {
-	if locks[chatID] == nil {
-		locks[chatID] = mutexFabric.NewMutex("mutex/" + strconv.Itoa(int(chatID)))
+func lockChat(chatID int64) error {
+	// if err := mutexFabric.NewMutex(
+	// 	"mutex/"+strconv.Itoa(int(chatID)),
+	// 	redsync.SetTries(1),
+	// ).Lock(); err != nil {
+	// 	log.Errorf("Got error during locking chat: %v", err)
+	// 	return err
+	// }
+	if _, ok := locks[chatID]; ok {
+		if locks[chatID] != nil {
+			locks[chatID].Lock()
+		} else {
+			locks[chatID] = &sync.Mutex{}
+			locks[chatID].Lock()
+		}
+	} else {
+		locks[chatID] = &sync.Mutex{}
+		locks[chatID].Lock()
 	}
-	locks[chatID].Lock()
+	return nil
 }
 
 func unlockChat(chatID int64) {
+	// mutexFabric.NewMutex("mutex/" + strconv.Itoa(int(chatID))).Unlock()
 	locks[chatID].Unlock()
 }
 
@@ -578,9 +642,9 @@ func bindButtonsHandlers(bot *tb.Bot) {
 	wordsInlineKeys = [][]tb.InlineButton{[]tb.InlineButton{seeWord}, []tb.InlineButton{nextWord}}
 	newGameInlineKeys = [][]tb.InlineButton{[]tb.InlineButton{newGame}}
 
-	bot.Handle(&newGame, mustLockCallback(startNewGameHandlerCallback))
-	bot.Handle(&seeWord, mustLockCallback(seeWordCallbackHandler))
-	bot.Handle(&nextWord, mustLockCallback(nextWordCallbackHandler))
+	bot.Handle(&newGame, logDurationCallback(mustLockCallback(startNewGameHandlerCallback)))
+	bot.Handle(&seeWord, logDurationCallback(mustLockCallback(seeWordCallbackHandler)))
+	bot.Handle(&nextWord, logDurationCallback(mustLockCallback(nextWordCallbackHandler)))
 }
 
 func rulesHandler(m *tb.Message) {

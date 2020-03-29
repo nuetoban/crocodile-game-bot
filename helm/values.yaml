@@ -5,6 +5,7 @@ tag: ""
 env: ""
 logLevel: TRACE
 botToken: ""
+webhookEnabled: false
 webhookAddr: ""
 webhookPath: ""
 githubName: ""

@@ -11,11 +11,11 @@ metadata:
     io.kompose.service: backend
   name: backend
 spec:
-  replicas: 3
+  replicas: 1
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxUnavailable: 1
+      maxUnavailable: 0
       maxSurge: 1
   selector:
     matchLabels:
@@ -73,11 +73,13 @@ spec:
             configMapKeyRef:
               key: CROCODILE_GAME_LOGLEVEL
               name: env
+{{- if .Values.webhookEnabled }}
         - name: CROCODILE_GAME_WEBHOOK
           valueFrom:
             configMapKeyRef:
               key: CROCODILE_GAME_WEBHOOK
               name: env
+{{- end }}
         - name: REDIS_HOST
           valueFrom:
             configMapKeyRef:
@@ -95,11 +97,15 @@ spec:
         resources:
           requests:
             memory: "32Mi"
-            cpu: "75m"
+            cpu: "200m"
           limits:
             memory: "96Mi"
-            cpu: "200m"
+            cpu: "400m"
         imagePullPolicy: Always
+
+        # Different livenessProbe depending on whether webhook mode enabled or not
+        # Webhook mode also has readinessProbe
+{{- if .Values.webhookEnabled }}
         livenessProbe:
           exec:
             command:
@@ -117,9 +123,6 @@ spec:
                     "text": "/start@Crocodile_Game_Bot",
                     "entities": [{"offset":0,"length":25,"type":"bot_command"}
                   ]}}'
-          initialDelaySeconds: 15
-          periodSeconds: 30
-          timeoutSeconds: 5
         readinessProbe:
           httpGet:
             path: {{.Values.webhookPath}}
@@ -130,5 +133,16 @@ spec:
           preStop:
             exec:
               command: ["/bin/sh", "-c", "sleep 10"]
+{{- else }}
+        livenessProbe:
+          exec:
+            command:
+              - /bin/sh
+              - -c
+              - cat /tmp/crocostatus | grep GOOD
+          initialDelaySeconds: 15
+          periodSeconds: 5
+          timeoutSeconds: 5
+{{- end }}
       restartPolicy: Always
 status: {}
