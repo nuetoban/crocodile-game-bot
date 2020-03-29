@@ -28,18 +28,36 @@ spec:
         name: redis
     spec:
       containers:
-      - env:
+      - name: redis
+        image: bitnami/redis:latest
+        ports:
+        - containerPort: 6379
+        env:
         - name: ALLOW_EMPTY_PASSWORD
           valueFrom:
             configMapKeyRef:
               key: ALLOW_EMPTY_PASSWORD
               name: env
-        image: bitnami/redis:latest
-        name: redis
         resources: {}
         volumeMounts:
-          - mountPath: /bitnami/redis/data
-            name: crocodile-redis-volume
+        - mountPath: /bitnami/redis/data
+          name: crocodile-redis-volume
+      - name: redis-exporter
+        image: oliver006/redis_exporter:alpine
+        ports:
+        - containerPort: 9121
+        env:
+        - name: REDIS_ADDR
+          valueFrom:
+            configMapKeyRef:
+              key: REDIS_ADDR
+              name: env
+        - name: REDIS_EXPORTER_WEB_TELEMETRY_PATH
+          valueFrom:
+            configMapKeyRef:
+              key: REDIS_EXPORTER_WEB_TELEMETRY_PATH
+              name: env
+        resources: {}
       nodeSelector:
         kubernetes.io/hostname: {{.Values.redisNodeSelectorHostname}}
       volumes:

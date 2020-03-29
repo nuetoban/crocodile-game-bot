@@ -12,3 +12,7 @@ spec:
             backend:
               serviceName: crocodile-{{.Values.env}}
               servicePort: 8080
+          - path: /redis-metrics
+            backend:
+              serviceName: redis
+              servicePort: 9121

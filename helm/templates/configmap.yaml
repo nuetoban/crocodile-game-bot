@@ -13,6 +13,8 @@ data:
   REDIS_HOST: redis:6379
   GITHUB_NAME: {{.Values.githubName}}
   GITHUB_TOKEN: {{.Values.githubToken}}
+  REDIS_ADDR: redis://localhost:6379
+  REDIS_EXPORTER_WEB_TELEMETRY_PATH: /redis-metrics
 kind: ConfigMap
 metadata:
   creationTimestamp: null
