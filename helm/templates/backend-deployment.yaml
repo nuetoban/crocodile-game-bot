@@ -12,7 +12,11 @@ metadata:
   name: backend
 spec:
   replicas: 1
-  strategy: {}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   selector:
     matchLabels:
       name: backend
@@ -69,6 +73,13 @@ spec:
             configMapKeyRef:
               key: CROCODILE_GAME_LOGLEVEL
               name: env
+{{- if .Values.webhookEnabled }}
+        - name: CROCODILE_GAME_WEBHOOK
+          valueFrom:
+            configMapKeyRef:
+              key: CROCODILE_GAME_WEBHOOK
+              name: env
+{{- end }}
         - name: REDIS_HOST
           valueFrom:
             configMapKeyRef:
@@ -78,11 +89,60 @@ spec:
         - name: CROCODILE_GAME_DEV
           value: "true"
 {{- end }}
-        image: {{.Values.image}}
+        image: {{.Values.image}}:{{.Values.tag}}
         name: backend
         ports:
         - containerPort: 8080
-        resources: {}
+        - containerPort: 9999
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "200m"
+          limits:
+            memory: "96Mi"
+            cpu: "400m"
         imagePullPolicy: Always
+
+        # Different livenessProbe depending on whether webhook mode enabled or not
+        # Webhook mode also has readinessProbe
+{{- if .Values.webhookEnabled }}
+        livenessProbe:
+          exec:
+            command:
+              - /bin/sh
+              - -c
+              - |-
+                curl http://localhost:9999{{.Values.webhookPath}} -X POST -d '{
+                  "update_id": 1000,
+                  "message": {
+                    "message_id": 1000,
+                    "from": { "id": 150804080, "is_bot": false, "first_name": "Viktor",
+                    "last_name": "%", "username": "blackstalin", "language_code": "en" },
+                    "chat": { "id": {{.Values.livenessProbeChatID}}, "title": "Healthcheck", "type": "supergroup" },
+                    "date": 1585085879,
+                    "text": "/start@Crocodile_Game_Bot",
+                    "entities": [{"offset":0,"length":25,"type":"bot_command"}
+                  ]}}'
+        readinessProbe:
+          httpGet:
+            path: {{.Values.webhookPath}}
+            port: 9999
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 10"]
+{{- else }}
+        livenessProbe:
+          exec:
+            command:
+              - /bin/sh
+              - -c
+              - cat /tmp/crocostatus | grep GOOD
+          initialDelaySeconds: 15
+          periodSeconds: 5
+          timeoutSeconds: 5
+{{- end }}
       restartPolicy: Always
 status: {}

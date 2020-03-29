@@ -1,9 +1,13 @@
 ---
-image: nuetoban/crocodile:latest
+image: nuetoban/crocodile
+tag: ""
 
 env: ""
 logLevel: TRACE
 botToken: ""
+webhookEnabled: false
+webhookAddr: ""
+webhookPath: ""
 githubName: ""
 githubToken: ""
 
@@ -16,3 +20,4 @@ redisNodeSelectorHostname: ""
 
 domain: ""
 backupChatID: "123456"
+livenessProbeChatID: "123456"
