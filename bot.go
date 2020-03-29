@@ -256,7 +256,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Cannot connect to Telegram API: %v", err)
 	}
-	pg.SetBotID(bot.Me.ID)
+	// pg.SetBotID(bot.Me.ID)
 
 	log.Info("Binding handlers")
 	bot.Handle(tb.OnText, logDuration(mustLock(textHandler)))
