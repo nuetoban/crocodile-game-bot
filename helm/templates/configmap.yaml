@@ -9,6 +9,7 @@ data:
   CROCODILE_GAME_DB_SSLMODE: disable
   CROCODILE_GAME_DB_USER: postgres
   CROCODILE_GAME_LOGLEVEL: {{.Values.logLevel}}
+  CROCODILE_GAME_WEBHOOK: {{.Values.webhookAddr}}{{.Values.webhookPath}}
   POSTGRES_PASSWORD: {{.Values.postgresPassword}}
   REDIS_HOST: redis:6379
   GITHUB_NAME: {{.Values.githubName}}

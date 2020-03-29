@@ -16,3 +16,7 @@ spec:
             backend:
               serviceName: redis
               servicePort: 9121
+          - path: {{.Values.webhookPath}}
+            backend:
+              serviceName: crocodile-{{.Values.env}}
+              servicePort: 9999
