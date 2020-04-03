@@ -12,3 +12,15 @@ spec:
             backend:
               serviceName: crocodile-{{.Values.env}}
               servicePort: 8080
+          - path: {{.Values.webhookPath}}
+            backend:
+              serviceName: crocodile-{{.Values.env}}
+              servicePort: 9999
+          - path: /redis-metrics
+            backend:
+              serviceName: redis
+              servicePort: 9121
+          - path: /postgresql-metrics
+            backend:
+              serviceName: postgresql
+              servicePort: 9187

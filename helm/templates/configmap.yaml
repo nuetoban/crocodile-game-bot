@@ -9,10 +9,15 @@ data:
   CROCODILE_GAME_DB_SSLMODE: disable
   CROCODILE_GAME_DB_USER: postgres
   CROCODILE_GAME_LOGLEVEL: {{.Values.logLevel}}
+  CROCODILE_GAME_WEBHOOK: {{.Values.webhookAddr}}{{.Values.webhookPath}}
   POSTGRES_PASSWORD: {{.Values.postgresPassword}}
   REDIS_HOST: redis:6379
   GITHUB_NAME: {{.Values.githubName}}
   GITHUB_TOKEN: {{.Values.githubToken}}
+  REDIS_ADDR: redis://localhost:6379
+  REDIS_EXPORTER_WEB_TELEMETRY_PATH: /redis-metrics
+  DATA_SOURCE_URI: localhost:5432/postgres?sslmode=disable
+  PG_EXPORTER_WEB_TELEMETRY_PATH: /postgresql-metrics
 kind: ConfigMap
 metadata:
   creationTimestamp: null
