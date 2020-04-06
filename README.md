@@ -5,6 +5,9 @@ but in Russian it's called that way. `¯\_(ツ)_/¯`
 
 The main bot instance is here: https://t.me/Crocodile_Game_Bot
 
+# ⚠️ This repo is no longer maintained
+We've migrated to a private repository.
+
 ## Installation
 ```
 go get -u github.com/nuetoban/crocodile-game-bot
