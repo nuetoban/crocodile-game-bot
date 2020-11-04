@@ -44,12 +44,13 @@ import (
 )
 
 var (
-	mutexFabric *redsync.Redsync
-	locks       map[int64]*sync.Mutex
-	machines    map[int64]*crocodile.Machine
-	fabric      *crocodile.MachineFabric
-	bot         *tb.Bot
-	redisPool   *redis.Pool
+	mutexFabric  *redsync.Redsync
+	locks        map[int64]*sync.Mutex
+	lockForLocks *sync.Mutex // ну а хули нам
+	machines     map[int64]*crocodile.Machine
+	fabric       *crocodile.MachineFabric
+	bot          *tb.Bot
+	redisPool    *redis.Pool
 
 	textUpdatesRecieved float64
 	startTotal          float64
@@ -71,6 +72,7 @@ var (
 )
 
 func init() {
+	lockForLocks = &sync.Mutex{}
 	locks = make(map[int64]*sync.Mutex)
 
 	redisHost := os.Getenv("REDIS_HOST")
@@ -460,22 +462,19 @@ func statsHandler(m *tb.Message) {
 }
 
 func lockChat(chatID int64) error {
-	// if err := mutexFabric.NewMutex(
-	// 	"mutex/"+strconv.Itoa(int(chatID)),
-	// 	redsync.SetTries(1),
-	// ).Lock(); err != nil {
-	// 	log.Errorf("Got error during locking chat: %v", err)
-	// 	return err
-	// }
 	if _, ok := locks[chatID]; ok {
 		if locks[chatID] != nil {
 			locks[chatID].Lock()
 		} else {
+			lockForLocks.Lock()
 			locks[chatID] = &sync.Mutex{}
+			lockForLocks.Unlock()
 			locks[chatID].Lock()
 		}
 	} else {
+		lockForLocks.Lock()
 		locks[chatID] = &sync.Mutex{}
+		lockForLocks.Unlock()
 		locks[chatID].Lock()
 	}
 	return nil
